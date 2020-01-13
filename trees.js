@@ -13,11 +13,14 @@ const START_Y = 50;
 const DELTA_SLOPE = 0.1;
 const DIST_THRESH = 0.5;
 
+const thickness = 2;
 const bgColor = '#101C23'
 const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41']
+const alpha = '55';
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
+    strokeWeight(thickness);
     background(bgColor);
     noLoop();
 }
@@ -31,9 +34,9 @@ async function draw() {
 }
 
 async function drawTree(x, y, color) {
-    stroke(color);
+    stroke(color + alpha);
     line(x, y, x, y - TRUNK_HEIGHT);
-
+    iters = 0;
     lines = [{x1: x, y1: y, x2: x, y2: y - TRUNK_HEIGHT}];
 
     while (lines.length < NUM_BRANCHES) {
