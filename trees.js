@@ -1,13 +1,13 @@
 /// <reference path="node_modules/@types/p5/global.d.ts" />
 
 const MAX_X = 10;
-const MIN_Y = 50;
+const MIN_Y = 40;
 const X_VAR = 15;
 const Y_VAR = 15;
 const PLACE_VAR_MIN = -10;
 const PLACE_VAR_MAX = 20;
 const TRUNK_HEIGHT = 30;
-const NUM_BRANCHES = 20;
+const NUM_BRANCHES = 25;
 const START_X = 50;
 const START_Y = 50;
 const DELTA_SLOPE = 0.1;
@@ -71,15 +71,15 @@ async function drawTree(x, y, color) {
     }
 }
 
-function intersects(a,b,c,d,p,q,r,s) {
+function intersects(x1a, y1a, x2a, y2a, x1b, y1b, x2b, y2b) {
     var det, gamma, lambda;
-    det = (c - a) * (s - q) - (r - p) * (d - b);
+    det = (x2a - x1a) * (y2b - y1b) - (x2b - x1b) * (y2a - y1a);
     if (det === 0) {
         return false;
     } 
     else {
-        lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
-        gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+        lambda = ((y2b - y1b) * (x2b - x1a) + (x1b - x2b) * (y2b - y1a)) / det;
+        gamma = ((y1a - y2a) * (x2b - x1a) + (x2a - x1a) * (y2b - y1a)) / det;
         return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
     }
 };
@@ -94,4 +94,4 @@ function distance(x1, y1, x2, y2) {
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
+}
