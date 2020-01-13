@@ -1,38 +1,50 @@
 /// <reference path="node_modules/@types/p5/global.d.ts" />
 
+const MAX_X = 10;
+const MIN_Y = 50;
+const X_VAR = 15;
+const Y_VAR = 15;
+const PLACE_VAR_MIN = -10;
+const PLACE_VAR_MAX = 20;
+const TRUNK_HEIGHT = 30;
+const NUM_BRANCHES = 20;
+const START_X = 50;
+const START_Y = 50;
+const DELTA_SLOPE = 0.1;
+const DIST_THRESH = 0.5;
+
+const bgColor = '#101C23'
+const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41']
+
 function setup() {
     createCanvas(windowWidth, windowHeight);
+    background(bgColor);
     noLoop();
 }
 
-function draw() {
-    colors = ['#177E89', '#084C61', '#DB3A34', '#FFC857', '#584D3D']
-    for (let y = 50; y < height; y += 50) {
-        for (let x = 50; x < width; x += 50) {
-            drawTree(x + random(-10, 20), y + random(-10, 20), random(colors));
+async function draw() {
+    for (let y = START_Y; y < height; y += START_Y) {
+        for (let x = START_X; x < width; x += START_X) {
+            await drawTree(x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), y + random(PLACE_VAR_MIN, PLACE_VAR_MAX), random(colors));
         }
     }
 }
 
-function drawTree(x, y, color) {
-    MAX_X = 10
-    MIN_Y = 50
-    DELTA_SLOPE = 0.1;
-    DIST_THRESH = 0.5;
+async function drawTree(x, y, color) {
     stroke(color);
-    line(x, y, x, y - 30);
+    line(x, y, x, y - TRUNK_HEIGHT);
 
-    lines = [{x1: x, y1: y, x2: x, y2: y - 30}];
+    lines = [{x1: x, y1: y, x2: x, y2: y - TRUNK_HEIGHT}];
 
-    while (lines.length < 20) {
+    while (lines.length < NUM_BRANCHES) {
         // get a point on the line y = mx + b
         let curLine = random(lines);
         let slope = getSlope(curLine.x1, curLine.y1, curLine.x2, curLine.y2);
         let intercept = curLine.y1 - (slope * curLine.x1);
         let x1 = random(curLine.x1, curLine.x2);
         let y1 = (slope === Infinity || slope === -Infinity) ? random(curLine.y1, curLine.y2) : slope * x1 + intercept;
-        let x2 = x1 + random(-15, 15);
-        let y2 = y1 + random(-15, 0);
+        let x2 = x1 + random(-X_VAR, X_VAR);
+        let y2 = y1 + random(-Y_VAR, 0);
 
         if (x1 > x + MAX_X || x1 < x - MAX_X || y2 < y - MIN_Y) {
             continue;
@@ -55,6 +67,7 @@ function drawTree(x, y, color) {
         }
         line(x1, y1, x2, y2);
         lines.push({x1, y1, x2, y2});
+        //await sleep(0.1);
     }
 }
 
@@ -78,3 +91,7 @@ function getSlope(x1, y1, x2, y2) {
 function distance(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
 }
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
