@@ -1,22 +1,29 @@
 /// <reference path="node_modules/@types/p5/global.d.ts" />
 
 const MAX_X = 10;
-const MIN_Y = 40;
+const MIN_Y_FACTOR = 2;
 const X_VAR = 15;
 const Y_VAR = 15;
+const MIN_Y_THRESH_FACTOR_BOTTOM = 0.1;
+const MAX_Y_THRESH_FACTOR_BOTTOM = 0.5;
+const MIN_Y_THRESH_FACTOR_TOP = 0.05;
+const MAX_Y_THRESH_FACTOR_TOP = 0.1;
 const PLACE_VAR_MIN = -10;
 const PLACE_VAR_MAX = 20;
-const TRUNK_HEIGHT = 30;
-const NUM_BRANCHES = 25;
+const MIN_TRUNK_HEIGHT = 20;
+const MAX_TRUNK_HEIGHT = 50;
+const MIN_BRANCHES = 10;
+const MAX_BRANCHES = 25;
 const START_X = 50;
 const START_Y = 50;
-const DELTA_SLOPE = 0.1;
-const DIST_THRESH = 0.5;
+const SLOPE_THRESH_MIN = 0.2;
+const SLOPE_THRESH_MAX = 0.5;
+const DIST_THRESH = 4;
 
 const thickness = 2;
 const bgColor = '#101C23'
 const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41']
-const alpha = '55';
+const alpha = 'FF';
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -35,21 +42,25 @@ async function draw() {
 
 async function drawTree(x, y, color) {
     stroke(color + alpha);
-    line(x, y, x, y - TRUNK_HEIGHT);
+    let trunkHeight = random(MIN_TRUNK_HEIGHT, MAX_TRUNK_HEIGHT);
+    line(x, y, x, y - trunkHeight);
     iters = 0;
-    lines = [{x1: x, y1: y, x2: x, y2: y - TRUNK_HEIGHT}];
-
-    while (lines.length < NUM_BRANCHES) {
+    lines = [{x1: x, y1: y, x2: x, y2: y - trunkHeight}];
+    numBranches = random(MIN_BRANCHES, MAX_BRANCHES);
+    let yThreshFactorBottom = random(MIN_Y_THRESH_FACTOR_BOTTOM, MAX_Y_THRESH_FACTOR_BOTTOM);
+    let yThreshFactorTop = random(MIN_Y_THRESH_FACTOR_TOP, MAX_Y_THRESH_FACTOR_TOP);
+    let slopeThresh = random(SLOPE_THRESH_MIN, SLOPE_THRESH_MAX);
+    while (lines.length < numBranches) {
         // get a point on the line y = mx + b
         let curLine = random(lines);
         let slope = getSlope(curLine.x1, curLine.y1, curLine.x2, curLine.y2);
         let intercept = curLine.y1 - (slope * curLine.x1);
         let x1 = random(curLine.x1, curLine.x2);
-        let y1 = (slope === Infinity || slope === -Infinity) ? random(curLine.y1, curLine.y2) : slope * x1 + intercept;
+        let y1 = (slope === Infinity || slope === -Infinity) ? random(curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2)), curLine.y2 - (yThreshFactorTop * (curLine.y1 - curLine.y2))) : slope * x1 + intercept;
         let x2 = x1 + random(-X_VAR, X_VAR);
         let y2 = y1 + random(-Y_VAR, 0);
 
-        if (x1 > x + MAX_X || x1 < x - MAX_X || y2 < y - MIN_Y) {
+        if (x1 > x + MAX_X || x1 < x - MAX_X || y2 < y - (trunkHeight * MIN_Y_FACTOR)) {
             continue;
         }
         tooSimilar = false;
@@ -59,7 +70,7 @@ async function drawTree(x, y, color) {
 
             // Don't allow any lines to intersect, any two slopes to be too similar, or any two end points to be too close
             if (intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
-                prevSlope - DELTA_SLOPE <= curSlope && curSlope <= prevSlope + DELTA_SLOPE ||
+                prevSlope - slopeThresh <= curSlope && curSlope <= prevSlope + slopeThresh ||
                 distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH) {
                 tooSimilar = true;
                 break;
