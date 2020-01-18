@@ -38,16 +38,35 @@ const SLOPE_THRESH_MIN = 0.2;
 const SLOPE_THRESH_MAX = 0.5;
 // Minimum amount of distance allowed between branches
 const DIST_THRESH = 4;
+// Factor to multiply x value by when calculating Perlin noise
+const X_NOISE_RATIO = 0.01;
+// Factor to multiply y value by when calculating Perlin noise
+const Y_NOISE_RATIO = 0.1;
+// Number of octaves to use for Perlin noise
+const NOISE_OCTAVES = 4;
+// Factor to use for Perlin noise falloff
+const NOISE_FALLOFF = 0.2;
+// Minimum variance to multiply the noise value by when applying y variance
+const NOISE_POINT_VAR_MIN = -2;
+// Maximum variance to multiply the noise value by when applying y variance
+const NOISE_POINT_VAR_MAX = 5
+// Minimum change in x/y values when adding background textures
+const BG_DELTA_MIN = 2;
+// Maximum change in x/y values when adding background textures
+const BG_DELTA_MAX = 5;
+// Line thickness
+const THICKNESS = 2;
+// alpha for all colors
+const ALPHA = 'FF';
 
-const thickness = 2;
 const bgColorDark = '#101C23';
 const bgColorLight = '#233641'
 const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41'];
-const alpha = 'FF';
+
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    strokeWeight(thickness);
+    strokeWeight(THICKNESS);
     background(bgColorDark);
     noLoop();
 }
@@ -63,19 +82,19 @@ function draw() {
 }
 
 function drawBackground() {
-    noiseDetail(5, 0.5);
-    for (let y = 0; y < height; y+=random(2, 5)) {
-        for (let x = 0; x < width; x+=random(2, 5)) {
-            let noiseVal = noise(x * 0.02, y * 0.02);
+    noiseDetail(NOISE_OCTAVES, NOISE_FALLOFF);
+    for (let y = 0; y < height; y += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
+        for (let x = 0; x < width; x += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
+            let noiseVal = noise(x * X_NOISE_RATIO, y * Y_NOISE_RATIO);
             let val = colorGradient(bgColorDark, bgColorLight, noiseVal);
-            stroke(val);
-            point(x, y + random(-noiseVal * 2, noiseVal * 5));
+            stroke(val + ALPHA);
+            point(x, y + random(noiseVal * NOISE_POINT_VAR_MIN, noiseVal * NOISE_POINT_VAR_MAX));
         }
     }
 }
 
 function drawTree(x, y, color) {
-    stroke(color + alpha);
+    stroke(color + ALPHA);
     let trunkHeight = random(MIN_TRUNK_HEIGHT, MAX_TRUNK_HEIGHT);
     // draw trunk
     line(x, y, x, y - trunkHeight);
