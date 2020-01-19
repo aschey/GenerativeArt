@@ -1,4 +1,4 @@
-/// <reference path="node_modules/@types/p5/global.d.ts" />
+/// <reference path="../node_modules/@types/p5/global.d.ts" />
 
 // Max x distance from trunk on either side
 const MAX_X = 15;

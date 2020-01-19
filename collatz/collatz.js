@@ -1,4 +1,4 @@
-/// <reference path="node_modules/@types/p5/global.d.ts" />
+/// <reference path="../node_modules/@types/p5/global.d.ts" />
 
 const BACKGROUND = 40;
 const FOREGROUND = 200;
@@ -9,8 +9,8 @@ const END_N = 500;
 function setup() {
     createCanvas(windowWidth, windowHeight);
 
-    background(40);
-    stroke(200);
+    background(BACKGROUND);
+    stroke(FOREGROUND);
     noLoop();
 }
 async function draw() {
