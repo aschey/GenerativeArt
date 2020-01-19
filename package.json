@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@types/node": "^13.1.8",
     "@types/p5": "^0.9.0",
     "lodash": "^4.17.15",
     "p5": "^0.10.2"
