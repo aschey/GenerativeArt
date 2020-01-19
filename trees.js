@@ -16,6 +16,10 @@ const MAX_Y_THRESH_FACTOR_BOTTOM = 0.5;
 const MIN_Y_THRESH_FACTOR_TOP = 0.05;
 // Branches off the trunk can end no more than n * trunkHeight from the base of the trunk
 const MAX_Y_THRESH_FACTOR_TOP = 0.1;
+// Min percentage of the end of the branch to allow creating new branches off of
+const MIN_X_THRESH_END = 0.1;
+// Max percentage of the end of the branch to allow creating new branches off of
+const MAX_X_THRESH_END = 0.7;
 // Minimum variance from START_X or START_Y to place a new tree
 const PLACE_VAR_MIN = -10;
 // Maximum variance from START_X or START_Y to place a new tree
@@ -51,11 +55,13 @@ const NOISE_POINT_VAR_MIN = -2;
 // Maximum variance to multiply the noise value by when applying y variance
 const NOISE_POINT_VAR_MAX = 5
 // Minimum change in x/y values when adding background textures
-const BG_DELTA_MIN = 2;
+const BG_DELTA_MIN = 1;
 // Maximum change in x/y values when adding background textures
-const BG_DELTA_MAX = 5;
+const BG_DELTA_MAX = 2;
 // Line thickness
 const THICKNESS = 2;
+// Background texture thickness
+const BG_THICKNESS = 1;
 // alpha for all colors
 const ALPHA = 'FF';
 
@@ -66,14 +72,14 @@ const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41'];
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    strokeWeight(THICKNESS);
+
     background(bgColorDark);
     noLoop();
 }
 
 function draw() {
     drawBackground();
-
+    strokeWeight(THICKNESS);
     for (let y = START_Y; y < height; y += START_Y) {
         for (let x = START_X; x < width; x += START_X) {
             drawTree(x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), y + random(PLACE_VAR_MIN, PLACE_VAR_MAX), random(colors));
@@ -82,6 +88,7 @@ function draw() {
 }
 
 function drawBackground() {
+    strokeWeight(BG_THICKNESS);
     noiseDetail(NOISE_OCTAVES, NOISE_FALLOFF);
     for (let y = 0; y < height; y += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
         for (let x = 0; x < width; x += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
@@ -103,14 +110,17 @@ function drawTree(x, y, color) {
     numBranches = random(MIN_BRANCHES, MAX_BRANCHES);
     let yThreshFactorBottom = random(MIN_Y_THRESH_FACTOR_BOTTOM, MAX_Y_THRESH_FACTOR_BOTTOM);
     let yThreshFactorTop = random(MIN_Y_THRESH_FACTOR_TOP, MAX_Y_THRESH_FACTOR_TOP);
+    let xThreshEnd = random(MIN_X_THRESH_END, MAX_X_THRESH_END);
     let slopeThresh = random(SLOPE_THRESH_MIN, SLOPE_THRESH_MAX);
     while (lines.length < numBranches) {
         // get a point on the line y = mx + b
         let curLine = random(lines);
         let slope = getSlope(curLine.x1, curLine.y1, curLine.x2, curLine.y2);
         let intercept = curLine.y1 - (slope * curLine.x1);
-        let x1 = random(curLine.x1, curLine.x2);
-        let y1 = (slope === Infinity || slope === -Infinity) ? random(curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2)), curLine.y2 - (yThreshFactorTop * (curLine.y1 - curLine.y2))) : slope * x1 + intercept;
+        let x1 = random(curLine.x1 + (xThreshEnd * (curLine.x2 - curLine.x1)), curLine.x2 - (xThreshEnd * (curLine.x2 - curLine.x1)));
+        let y1 = (slope === Infinity || slope === -Infinity) 
+            ? random(curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2)), curLine.y2 + (yThreshFactorTop * (curLine.y1 - curLine.y2))) 
+            : slope * x1 + intercept;
         let x2 = x1 + random(-X_VAR, X_VAR);
         let y2 = y1 + random(-Y_VAR, 0);
 
@@ -121,9 +131,9 @@ function drawTree(x, y, color) {
         let curSlope = getSlope(x1, y1, x2, y2);
         for (prevLine of lines) {
             prevSlope = getSlope(prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2);
-
             // Don't allow any lines to intersect, any two slopes to be too similar, or any two end points to be too close
-            if (intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
+            if (curSlope === Infinity || curSlope === -Infinity ||
+                intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
                 prevSlope - slopeThresh <= curSlope && curSlope <= prevSlope + slopeThresh ||
                 distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH) {
                 tooSimilar = true;
