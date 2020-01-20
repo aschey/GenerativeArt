@@ -12,8 +12,24 @@ const fillColors = ['#7DDF64', '#C0DF85', '#DEB986', '#DB6C79', '#ED4D6E'];
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-
-    background(BACKGROUND);
+    background(BACKGROUND, );
+    for (let y = 10; y < height; y += 10) {
+        for (let x = 10; x < width; x += 10) {
+            let ax = x + random(-5, 5);
+            let ay = y + random(-5, 5);
+            let dotColor = 50 + randomGaussian(10, 5);
+            if (dotColor > 70) {
+                dotColor = 70;
+            }
+            if (dotColor < 50) {
+                dotColor = 50;
+            }
+            stroke(dotColor);
+            point(ax, ay);
+            
+        }
+    }
+    
     stroke(FOREGROUND);
     noLoop();
 }
@@ -44,7 +60,7 @@ function draw() {
     }
 
     for (let y = 10; y < height; y += 50) {
-        for (let x = 10; x < width; x += 50) {
+        for (let x = width / 4; x < width; x += 50) {
             let ax = x + random(-25, 25);
             let ay = y + random(-25, 25);
             if (checkPixelColor(ax, ay)) {
@@ -59,10 +75,10 @@ function checkPixelColor(x, y) {
     let origX = x;
     let origY = y;
     let data = drawingContext.getImageData(x, y, 1, 1);
-    if (data.data.some(d => d !== 255 && d !== BACKGROUND)) {
+    if (data.data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
         return false;
     }
-    while (x > 0 && !data.data.some(d => d !== 255 && d !== BACKGROUND)) {
+    while (x > 0 && !data.data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
         x--;
         data = drawingContext.getImageData(x, y, 1, 1);
     }
@@ -71,7 +87,7 @@ function checkPixelColor(x, y) {
     }
     x++;
     data = drawingContext.getImageData(x, y, 1, 1);
-    while (y > 0 && !data.data.some(d => d !== 255 && d !== BACKGROUND)) {
+    while (y > 0 && !data.data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
         y--;
         data = drawingContext.getImageData(x, y, 1, 1);
     }
@@ -81,7 +97,7 @@ function checkPixelColor(x, y) {
     y++;
     data = drawingContext.getImageData(x, y, 1, 1);
     topLeft = {x, y};
-    while (x < width && !data.data.some(d => d !== 255 && d !== BACKGROUND)) {
+    while (x < width && !data.data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
         x++;
         data = drawingContext.getImageData(x, y, 1, 1);
     }
@@ -90,7 +106,7 @@ function checkPixelColor(x, y) {
     }
     x--;
     data = drawingContext.getImageData(x, y, 1, 1);
-    while (y < height && !data.data.some(d => d !== 255 && d !== BACKGROUND)) {
+    while (y < height && !data.data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
         y++;
         data = drawingContext.getImageData(x, y, 1, 1);
     }
@@ -99,7 +115,7 @@ function checkPixelColor(x, y) {
     }
     y--;
 
-    if (x - topLeft.x > 200 || y - topLeft.y > 200 || (x - topLeft.x) / (y - topLeft.y) > 10) {
+    if (x - topLeft.x > 200 || y - topLeft.y > 200 || (x - topLeft.x) / (y - topLeft.y) > 10 || (y - topLeft.y) / (x - topLeft.x) > 10) {
         return false;
     }
     return true;
@@ -107,14 +123,10 @@ function checkPixelColor(x, y) {
 
 function floodFill(x, y) {
     data = drawingContext.getImageData(x, y, 1, 1);
-    if (data.data.some(d => d !== 255 && d !== BACKGROUND)) {
+    if (data.data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
         return;
     }
     points = [{x, y}];
-    let minX = x;
-    let maxX = x;
-    let minY = y;
-    let maxY = y;
     queue = [{x, y}];
     while (queue.length > 0) {
         if (points.length > 10000) {
@@ -122,31 +134,27 @@ function floodFill(x, y) {
         }
         let coord = queue[0];
         queue = queue.slice(1);
-        if (!drawingContext.getImageData(coord.x, coord.y + 1, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND) && !points.some(p => p.x === coord.x && p.y === coord.y + 1)) {
-            maxY = max(maxY, coord.y + 1);
+        if (!drawingContext.getImageData(coord.x, coord.y + 1, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x && p.y === coord.y + 1)) {
             queue.push({x: coord.x, y: coord.y + 1});
             points.push({x: coord.x, y: coord.y + 1});
         }
-        if (!drawingContext.getImageData(coord.x + 1, coord.y, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND) && !points.some(p => p.x === coord.x + 1 && p.y === coord.y)) {
-            //point(coord.x + 1, coord.y);
-            maxX = max(maxX, coord.x + 1);
+        if (!drawingContext.getImageData(coord.x + 1, coord.y, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x + 1 && p.y === coord.y)) {
             queue.push({x: coord.x + 1, y: coord.y});
             points.push({x: coord.x + 1, y: coord.y});
         }
-        if (!drawingContext.getImageData(coord.x, coord.y - 1, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND) && !points.some(p => p.x === coord.x && p.y === coord.y - 1)) {
-            //point(coord.x, coord.y - 1);
-            minY = min(minY, coord.y - 1);
+        if (!drawingContext.getImageData(coord.x, coord.y - 1, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x && p.y === coord.y - 1)) {
             queue.push({x: coord.x, y: coord.y - 1});
             points.push({x: coord.x, y: coord.y - 1});
         }
-        if (!drawingContext.getImageData(coord.x - 1, coord.y, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND) && !points.some(p => p.x === coord.x - 1 && p.y === coord.y)) {
-            //point(coord.x - 1, coord.y);
-            minX = min(minX, coord.x - 1);
+        if (!drawingContext.getImageData(coord.x - 1, coord.y, 1, 1).data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x - 1 && p.y === coord.y)) {
             queue.push({x: coord.x - 1, y: coord.y});
             points.push({x: coord.x - 1, y: coord.y});
         }
     }
-    
+    // stroke(BACKGROUND);
+    // for (let vPoint of points) {
+    //     point(vPoint.x, vPoint.y);
+    // }
     stroke(random(fillColors) + ALPHA);
     for (let vPoint of points) {
         point(vPoint.x, vPoint.y);
