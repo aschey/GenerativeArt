@@ -128,14 +128,39 @@ function checkPixelColor(x, y) {
     if (x - topLeft.x > 200 || y - topLeft.y > 200 || (x - topLeft.x) / (y - topLeft.y) > 10 || (y - topLeft.y) / (x - topLeft.x) > 10) {
         return false;
     }
-    for (let curX = topLeft.x; curX < x; curX++) {
-        for (let curY = topLeft.y; curY < y; curY++) {
-            data = getPixel(curX, curY, 1, 1);
-            if (data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
-                return false;
-            }
-        }
+
+    maxX1 = x;
+    maxY1 = y;
+    x = topLeft.x;
+    y = topLeft.y;
+    data = getPixel(x, y, 1, 1);
+    while (y < height && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+        y++;
+        data = getPixel(x, y, 1, 1);
     }
+    
+    if (x === width || x - topLeft.x > 100) {
+        return false;
+    }
+    y--;
+    data = getPixel(x, y, 1, 1);
+    while (x < width && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+        x++;
+        data = getPixel(x, y, 1, 1);
+    }
+    x--;
+    if (Math.abs(x - maxX1) > 1 || Math.abs(y - maxY1 > 1)) {
+        return false;
+    }
+    
+    // for (let curX = topLeft.x; curX < x; curX++) {
+    //     for (let curY = topLeft.y; curY < y; curY++) {
+    //         data = getPixel(curX, curY, 1, 1);
+    //         if (data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    //             return false;
+    //         }
+    //     }
+    // }
     return true;
 }
 
@@ -180,10 +205,18 @@ function floodFill(x, y) {
     }
     fill(random(fillColors) + ALPHA);
     let res = grahamScan(points);
-    if (res.length > 5) {
-        return;
-    }
+    // if (res.length > 5) {
+    //     return;
+    // }
     beginShape();
+    for (let i = 0; i < res.length; i++) {
+        let cur = res[i];
+        let next = res[i === res.length - 1 ? 0 : i + 1];
+        let slope = getSlope(cur.x, cur.y, next.x, next.y);
+        if (slope !== -Infinity && slope !== Infinity && distance(cur.x, cur.y, next.x, next.y) > 10 && Math.abs(slope) > 0.05 && Math.abs(slope) < 10) {
+            return;
+        }
+    }
     for (let p of res) {
         vertex(p.x, p.y);
     }
