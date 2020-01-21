@@ -1,4 +1,5 @@
 /// <reference path="../node_modules/@types/p5/global.d.ts" />
+/// <reference path="../util.js" />
 
 // Max x distance from trunk on either side
 const MAX_X = 15;
@@ -148,52 +149,4 @@ function drawTree(x, y, color) {
     }
 }
 
-function intersects(x1a, y1a, x2a, y2a, x1b, y1b, x2b, y2b) {
-    var det, gamma, lambda;
-    det = (x2a - x1a) * (y2b - y1b) - (x2b - x1b) * (y2a - y1a);
-    if (det === 0) {
-        return false;
-    } 
-    else {
-        lambda = ((y2b - y1b) * (x2b - x1a) + (x1b - x2b) * (y2b - y1a)) / det;
-        gamma = ((y1a - y2a) * (x2b - x1a) + (x2a - x1a) * (y2b - y1a)) / det;
-        return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
-    }
-};
 
-function getSlope(x1, y1, x2, y2) {
-    return (y2 - y1) / (x2 - x1);
-}
-
-function distance(x1, y1, x2, y2) {
-    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function getColorInt(hexColorString, pos) {
-    return parseInt(hexColorString.substr(pos * 2, 2), 16);
-}
-
-function hexStringToInts(hexColorString) {
-    // Remove leading #
-    let valsOnly = hexColorString.slice(1, hexColorString.length);
-    return _.range(3).map(i => getColorInt(valsOnly, i));
-}
-
-function getNewColorVal(startVal, colorDiff, percent) {
-    return ((colorDiff * percent) + startVal).toString(16).split('.')[0].padStart(2, '0');
-}
-
-function colorGradient(startColor, endColor, percent) {
-    // get colors
-    let startInts = hexStringToInts(startColor);
-    let endInts = hexStringToInts(endColor);
-
-    // calculate new color
-    let newVals = startInts.map((startVal, i) => getNewColorVal(startVal, endInts[i] - startVal, percent));
-
-    return `#${newVals.join('')}`;
-};
