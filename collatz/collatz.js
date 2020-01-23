@@ -70,11 +70,12 @@ function draw() {
     d = pixelDensity();
     noStroke();
     for (let y = 50; y < height; y += 10) {
-        for (let x = round(width / 4); x < width; x += 10) {
+        for (let x = y; x < width; x += 10) {
             let ax = x + round(random(-5, 5));
             let ay = y + round(random(-5, 5));
             if (checkPixelColor(ax, ay)) {
                 floodFill(ax, ay);
+                loadPixels();
             }
             
         }
@@ -84,30 +85,26 @@ function draw() {
 function checkPixelColor(x, y) {
     let origX = x;
     let origY = y;
-    let data = getPixel(x, y, 1, 1);
-    if (data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    if (!isBackground(x, y)) {
         return false;
     }
-    while (x > 0 && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    while (x > 0 && isBackground(x, y)) {
         x--;
-        data = getPixel(x, y, 1, 1);
     }
     if (x === 0 || origX - x > 100) {
         return false;
     }
     x++;
     data = getPixel(x, y, 1, 1);
-    while (y > 0 && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    while (y > 0 && isBackground(x, y)) {
         y--;
-        data = getPixel(x, y, 1, 1);
     }
     if (y === 0 || origY - y > 100) {
         return false;
     }
     y++;
-    data = getPixel(x, y, 1, 1);
     topLeft = {x, y};
-    while (x < width && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    while (x < width && isBackground(x, y)) {
         x++;
         data = getPixel(x, y, 1, 1);
     }
@@ -115,10 +112,8 @@ function checkPixelColor(x, y) {
         return false;
     }
     x--;
-    data = getPixel(x, y, 1, 1);
-    while (y < height && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    while (y < height && isBackground(x, y)) {
         y++;
-        data = getPixel(x, y, 1, 1);
     }
     if (y === height || y - topLeft.y > 100) {
         return false;
@@ -133,20 +128,16 @@ function checkPixelColor(x, y) {
     maxY1 = y;
     x = topLeft.x;
     y = topLeft.y;
-    data = getPixel(x, y, 1, 1);
-    while (y < height && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    while (y < height && isBackground(x, y)) {
         y++;
-        data = getPixel(x, y, 1, 1);
     }
     
     if (x === width || x - topLeft.x > 100) {
         return false;
     }
     y--;
-    data = getPixel(x, y, 1, 1);
-    while (x < width && !data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
+    while (x < width && isBackground(x, y)) {
         x++;
-        data = getPixel(x, y, 1, 1);
     }
     x--;
     if (Math.abs(x - maxX1) > 1 || Math.abs(y - maxY1 > 1)) {
@@ -182,22 +173,22 @@ function floodFill(x, y) {
         }
         let coord = queue[0];
         queue = queue.slice(1);
-        if (!getPixel(coord.x, coord.y + 1, 1, 1).some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x && p.y === coord.y + 1)) {
+        if (isBackground(coord.x, coord.y + 1) && !points.some(p => p.x === coord.x && p.y === coord.y + 1)) {
             maxY = max(maxY, coord.y + 1);
             queue.push({x: coord.x, y: coord.y + 1});
             points.push({x: coord.x, y: coord.y + 1});
         }
-        if (!getPixel(coord.x + 1, coord.y, 1, 1).some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x + 1 && p.y === coord.y)) {
+        if (isBackground(coord.x + 1, coord.y) && !points.some(p => p.x === coord.x + 1 && p.y === coord.y)) {
             maxX = max(maxX, coord.x + 1);
             queue.push({x: coord.x + 1, y: coord.y});
             points.push({x: coord.x + 1, y: coord.y});
         }
-        if (!getPixel(coord.x, coord.y - 1, 1, 1).some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x && p.y === coord.y - 1)) {
+        if (isBackground(coord.x, coord.y - 1) && !points.some(p => p.x === coord.x && p.y === coord.y - 1)) {
             minY = min(minY, coord.y - 1);
             queue.push({x: coord.x, y: coord.y - 1});
             points.push({x: coord.x, y: coord.y - 1});
         }
-        if (!getPixel(coord.x - 1, coord.y, 1, 1).some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70)) && !points.some(p => p.x === coord.x - 1 && p.y === coord.y)) {
+        if (isBackground(coord.x - 1, coord.y) && !points.some(p => p.x === coord.x - 1 && p.y === coord.y)) {
             minX = min(minX, coord.x - 1);
             queue.push({x: coord.x - 1, y: coord.y});
             points.push({x: coord.x - 1, y: coord.y});
@@ -223,7 +214,9 @@ function floodFill(x, y) {
     endShape();
 }
 
-
+function isBackground(x, y) {
+    return !getPixel(x, y, 1, 1).some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))
+}
 
 
 function gauss() {
