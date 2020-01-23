@@ -74,7 +74,7 @@ function draw() {
             let ax = x + round(random(-5, 5));
             let ay = y + round(random(-5, 5));
             if (checkPixelColor(ax, ay)) {
-                floodFill(ax, ay);
+                scanlineSeedFilling(ax, ay);
                 loadPixels();
             }
             
@@ -173,6 +173,21 @@ function floodFill(x, y) {
         }
         let coord = queue[0];
         queue = queue.slice(1);
+        if (isBackground(coord.x, coord.y)) {
+            points.push({x: coord.x, y: coord.y});
+            let ax = coord.x - 1;
+            while (isBackground(ax, coord.y)) {
+                points.push({x: ax, y: coord.y});
+                ax--;
+            }
+            ax = coord.x + 1;
+            while (isBackground(ax, coord.y)) {
+                points.push({x: ax, y: coord.y});
+                ax++;
+            }
+        }
+
+
         if (isBackground(coord.x, coord.y + 1) && !points.some(p => p.x === coord.x && p.y === coord.y + 1)) {
             maxY = max(maxY, coord.y + 1);
             queue.push({x: coord.x, y: coord.y + 1});
@@ -213,6 +228,110 @@ function floodFill(x, y) {
     }
     endShape();
 }
+
+// See https://en.wikipedia.org/wiki/Flood_fill
+// https://gist.github.com/arcollector/155a8c751f65c15872fb
+function scanlineSeedFilling( seedX, seedY) {
+    var points = [];
+	var seedScanline = function( xLeft, xRight, y ) {
+		var x = xLeft, xEnter,
+			px,
+			pFlag;
+
+		while( x <= xRight ) {
+			// seed the scan line above
+			pFlag = false;
+			for(; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < xRight; x++) {
+				pFlag = true;
+			}
+			if( pFlag ) {
+				if( x === xRight && isBackground(x, y) && !points.some(p => p.x === x && p.y === y)) {
+					stack.push( { x: x, y: y } );
+				} else {
+					stack.push( { x: x - 1, y: y } );
+				}
+			}
+			// continue checking in case the span is interrupted
+			xEnter = x;
+			for(; !isBackground(x, y) || points.some(p => p.x === x && p.y === y) && x < xRight; x++);
+			// make sure that the px coordinate is incremented
+			if( x === xEnter ) {
+				x++;
+			}
+		}	
+	};
+
+	var stack = [];
+    stack.push( { x: seedX, y: seedY } );
+	
+	while( stack.length ) {
+		
+		// get the seed px and set it to the new value
+		var popElem = stack[stack.length-1],
+			x = popElem.x,
+			y = popElem.y;
+
+        //canvas.setPixel( x, y, fillColor );
+        points.push({x, y});
+		stack.length--; // pop
+		
+		var saveX,
+			xLeft, xRight,
+			px;
+		
+		// save the x coordinate of the seed px
+		saveX = x;
+		// fill the span to the left of the seed px
+		for( x--; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x > 0; x--) {
+            points.push({x, y});
+            if (points.length > 10000) {
+                return;
+            }
+			//canvas.setPixel( x, y, fillColor );
+		}
+		// save the extreme left px
+		xLeft = x + 1;
+		
+		// fill the span to the right of the seed px
+		x = saveX;
+		for( x++; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < width; x++) {
+            points.push({x, y});
+            if (points.length > 10000) {
+                return;
+            }
+			//canvas.setPixel( x, y, fillColor );
+		}
+		// save the extreme right px
+		xRight = x - 1;
+		
+		// check that scan line above is neither a polygon boundary nor has
+		// been previously completely filled; if not, seed the scan line
+		// start at the left edge of the scan line subspan
+		seedScanline( xLeft, xRight, y + 1 );
+		
+		// check that the scan line below is ot a polygon boundary
+		// nor has been previously completely filled
+		seedScanline( xLeft, xRight, y - 1 );
+    }
+    fill(random(fillColors) + ALPHA);
+    let res = grahamScan(points);
+    // if (res.length > 5) {
+    //     return;
+    // }
+    beginShape();
+    for (let i = 0; i < res.length; i++) {
+        let cur = res[i];
+        let next = res[i === res.length - 1 ? 0 : i + 1];
+        let slope = getSlope(cur.x, cur.y, next.x, next.y);
+        if (slope !== -Infinity && slope !== Infinity && distance(cur.x, cur.y, next.x, next.y) > 10 && Math.abs(slope) > 0.05 && Math.abs(slope) < 10) {
+            return;
+        }
+    }
+    for (let p of res) {
+        vertex(p.x, p.y);
+    }
+    endShape();
+};
 
 function isBackground(x, y) {
     return !getPixel(x, y, 1, 1).some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))
