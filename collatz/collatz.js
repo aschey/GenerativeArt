@@ -1,42 +1,78 @@
 /// <reference path="../node_modules/@types/p5/global.d.ts" />
 /// <reference path="../util.js" />
-p5.disableFriendlyErrors = true; // disables FES
-const BACKGROUND = 40;
-const FOREGROUND = '#4C6663';
-const GAUSS_CENTER = 0;
-const GAUS_SDT_DEV = 4;
-const START_N = 200;
-const END_N = 500;
-const ALPHA = 'AA';
 
-let d = null;
-const fillColors = ['#7DDF64', '#C0DF85', '#DEB986', '#DB6C79', '#ED4D6E'];
-//const fillColors = ['#A7E2E3', '#80CFA9', '#4C6663', '#7392B7', '#FFA69E']
-//const fillColors = ['#C1EDCC', '#62BFED', '#A7E2E3', '#80CFA9', '#B0C0BC']
-//const fillColors = ['#38023B', '#62BFED', '#A7E2E3', '#80CFA9', '#A288E3']
+// background color
+const BACKGROUND = 40;
+// mean for gauss randomization of lines
+const LINE_MEAN = 0;
+// std dev for gauss randomization of lines
+const LINE_STD_DEV = 4;
+// start collatz number
+const START_N = 200;
+// end collatz number
+const END_N = 500;
+// line color alpha
+const ALPHA = 'AA';
+// line color start
+const LINE_COLOR_1 = '#DDDDDD';
+// line color end
+const LINE_COLOR_2 = '#AAAAAA';
+// probability of choosing a colored line
+const COLOR_LINE_PROB = 0.1;
+// coefficient to pass to noise() for x and y coords
+const LINE_NOISE_RATIO = 0.2;
+
+const FILL_COLORS = ['#7DDF64', '#C0DF85', '#DEB986', '#DB6C79', '#ED4D6E'];
+// change in x values when creating background texture
+const BG_DELTA_X = 10;
+// change in y values when creating background texture
+const BG_DELTA_Y = 10;
+// variance when choosing background coords
+const BG_VAR = 5;
+// background starting color
+const BG_BASE_COLOR = 50;
+// gaussian mean for background
+const BG_MEAN = 10;
+// gaussian std dev for background
+const BG_STD_DEV = 5;
+// start y value for adding fill squares
+const SQUARES_START_Y = 50;
+// change in y value for adding fill squares
+const SQUARES_DELTA_Y = 10;
+// change in x value for adding fill squares
+const SQUARES_DELTA_X = 10;
+// variance when choosing coords for fill squares
+const SQUARES_VAR = 5;
+// value to add to the y value when starting a new row of fill squares
+const SQUARES_ADJ_X = 500;
+const IGNORE_DIAG_LENGTH = 10;
+const IGNORE_DIAG_LOWER_SLOPE = 0.05;
+const IGNORE_DIAG_UPPER_SLOPE = 10;
+
+const BG_MAX_COLOR = BG_BASE_COLOR + BG_MEAN + BG_STD_DEV * 2;
+// calculated below, need to wait until setup is called
+let PIXEL_DENSITY = null;
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    noSmooth();
+    PIXEL_DENSITY = pixelDensity();
     background(BACKGROUND);
-    for (let y = 10; y < height; y += 10) {
-        for (let x = 10; x < width; x += 10) {
-            let ax = x + random(-5, 5);
-            let ay = y + random(-5, 5);
-            let dotColor = 50 + randomGaussian(10, 5);
-            if (dotColor > 70) {
-                dotColor = 70;
+    let maxPixelVal = BG_BASE_COLOR + BG_MEAN + BG_STD_DEV * 2;
+    for (let y = BG_DELTA_Y; y < height; y += BG_DELTA_Y) {
+        for (let x = BG_DELTA_X; x < width; x += BG_DELTA_X) {
+            let dotColor = BG_BASE_COLOR + randomGaussian(BG_MEAN, BG_STD_DEV);
+            if (dotColor > BG_MAX_COLOR) {
+                dotColor = BG_MAX_COLOR;
             }
-            if (dotColor < 50) {
-                dotColor = 50;
+            if (dotColor < BG_BASE_COLOR) {
+                dotColor = BG_BASE_COLOR;
             }
             stroke(dotColor);
-            point(ax, ay);
+            point(x + equiRandom(BG_VAR), y + equiRandom(BG_VAR));
             
         }
     }
     
-    //stroke(FOREGROUND);
     noLoop();
 }
 function draw() {
@@ -44,7 +80,7 @@ function draw() {
         let prevX = i;
         let prevY = i;
         let prev = i;
-        stroke(colorGradient('#dddddd', '#aaaaaa', noise(i * 0.02, i * 0.02)));
+        
         for (let next of genCollatz(i)) {
             let nextX = prevX;
             let nextY = prevY;
@@ -54,12 +90,20 @@ function draw() {
             else {
                 nextX = next;
             }
-            let x1 = prevX + gauss();
-            let y1 = prevY + gauss();
-            let x2 = nextX + gauss();
-            let y2 = nextY + gauss();
             
-            line(x1, y1, x2, y2);
+
+            if (random() <= COLOR_LINE_PROB) {
+                stroke(colorGradient(LINE_COLOR_1, LINE_COLOR_2, noise(i * LINE_NOISE_RATIO, i * LINE_NOISE_RATIO)));
+                line(prevX, prevY, nextX, nextY);
+                stroke(random(FILL_COLORS) + ALPHA);
+                line(prevX, prevY, nextX, nextY);
+            }
+            else {
+                stroke(colorGradient(LINE_COLOR_1, LINE_COLOR_2, noise(i * LINE_NOISE_RATIO, i * LINE_NOISE_RATIO)));
+                line(prevX + lineGauss(), prevY + lineGauss(), nextX + lineGauss(), nextY + lineGauss());
+            }
+
+            
             
             prevX = nextX;
             prevY = nextY;
@@ -67,15 +111,15 @@ function draw() {
         }
     }
     loadPixels();
-    d = pixelDensity();
     noStroke();
-    for (let y = 50; y < height; y += 10) {
-        for (let x = y; x < width; x += 10) {
-            let ax = x + round(random(-5, 5));
-            let ay = y + round(random(-5, 5));
-            if (checkPixelColor(ax, ay)) {
-                scanlineSeedFilling(ax, ay);
-                loadPixels();
+    for (let y = SQUARES_START_Y; y < height; y += SQUARES_DELTA_Y) {
+        for (let x = y + SQUARES_ADJ_X; x < width; x += SQUARES_DELTA_X) {
+            let adjX = x + round(equiRandom(SQUARES_VAR));
+            let adjY = y + round(equiRandom(SQUARES_VAR));
+            if (checkPixelColor(adjX, adjY)) {
+                let points = scanlineSeedFilling(adjX, adjY, isBackground);
+                let res = grahamScan(points);
+                drawFill(res);
             }
             
         }
@@ -95,7 +139,7 @@ function checkPixelColor(x, y) {
         return false;
     }
     x++;
-    data = getPixel(x, y, 1, 1);
+    data = getPixel(x, y, PIXEL_DENSITY);
     while (y > 0 && isBackground(x, y)) {
         y--;
     }
@@ -106,7 +150,7 @@ function checkPixelColor(x, y) {
     topLeft = {x, y};
     while (x < width && isBackground(x, y)) {
         x++;
-        data = getPixel(x, y, 1, 1);
+        data = getPixel(x, y, PIXEL_DENSITY);
     }
     if (x === width || x - topLeft.x > 100) {
         return false;
@@ -143,203 +187,38 @@ function checkPixelColor(x, y) {
     if (Math.abs(x - maxX1) > 1 || Math.abs(y - maxY1 > 1)) {
         return false;
     }
-    
-    // for (let curX = topLeft.x; curX < x; curX++) {
-    //     for (let curY = topLeft.y; curY < y; curY++) {
-    //         data = getPixel(curX, curY, 1, 1);
-    //         if (data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
-    //             return false;
-    //         }
-    //     }
-    // }
+
     return true;
 }
 
-// See https://en.wikipedia.org/wiki/Flood_fill
-function floodFill(x, y) {
-    data = getPixel(x, y, 1, 1);
-    if (data.some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))) {
-        return;
-    }
-    points = [{x, y}];
-    queue = [{x, y}];
-    let minX = x;
-    let minY = y;
-    let maxX = x;
-    let maxY = y;
-    while (queue.length > 0) {
-        if (points.length > 10000) {
-            return;
-        }
-        let coord = queue[0];
-        queue = queue.slice(1);
-        if (isBackground(coord.x, coord.y)) {
-            points.push({x: coord.x, y: coord.y});
-            let ax = coord.x - 1;
-            while (isBackground(ax, coord.y)) {
-                points.push({x: ax, y: coord.y});
-                ax--;
-            }
-            ax = coord.x + 1;
-            while (isBackground(ax, coord.y)) {
-                points.push({x: ax, y: coord.y});
-                ax++;
-            }
-        }
-
-
-        if (isBackground(coord.x, coord.y + 1) && !points.some(p => p.x === coord.x && p.y === coord.y + 1)) {
-            maxY = max(maxY, coord.y + 1);
-            queue.push({x: coord.x, y: coord.y + 1});
-            points.push({x: coord.x, y: coord.y + 1});
-        }
-        if (isBackground(coord.x + 1, coord.y) && !points.some(p => p.x === coord.x + 1 && p.y === coord.y)) {
-            maxX = max(maxX, coord.x + 1);
-            queue.push({x: coord.x + 1, y: coord.y});
-            points.push({x: coord.x + 1, y: coord.y});
-        }
-        if (isBackground(coord.x, coord.y - 1) && !points.some(p => p.x === coord.x && p.y === coord.y - 1)) {
-            minY = min(minY, coord.y - 1);
-            queue.push({x: coord.x, y: coord.y - 1});
-            points.push({x: coord.x, y: coord.y - 1});
-        }
-        if (isBackground(coord.x - 1, coord.y) && !points.some(p => p.x === coord.x - 1 && p.y === coord.y)) {
-            minX = min(minX, coord.x - 1);
-            queue.push({x: coord.x - 1, y: coord.y});
-            points.push({x: coord.x - 1, y: coord.y});
-        }
-    }
-    fill(random(fillColors) + ALPHA);
-    let res = grahamScan(points);
-    // if (res.length > 5) {
-    //     return;
-    // }
-    beginShape();
+function drawFill(res) {
+    fill(random(FILL_COLORS) + ALPHA);
     for (let i = 0; i < res.length; i++) {
         let cur = res[i];
         let next = res[i === res.length - 1 ? 0 : i + 1];
         let slope = getSlope(cur.x, cur.y, next.x, next.y);
-        if (slope !== -Infinity && slope !== Infinity && distance(cur.x, cur.y, next.x, next.y) > 10 && Math.abs(slope) > 0.05 && Math.abs(slope) < 10) {
+        // Don't draw shapes with large diagonal lines
+        if (slope !== -Infinity && slope !== Infinity && 
+            distance(cur.x, cur.y, next.x, next.y) > IGNORE_DIAG_LENGTH && 
+            Math.abs(slope) > IGNORE_DIAG_LOWER_SLOPE && Math.abs(slope) < IGNORE_DIAG_UPPER_SLOPE) {
             return;
         }
     }
+    beginShape();
     for (let p of res) {
         vertex(p.x, p.y);
     }
     endShape();
+    loadPixels();
 }
-
-// See https://en.wikipedia.org/wiki/Flood_fill
-// https://gist.github.com/arcollector/155a8c751f65c15872fb
-function scanlineSeedFilling( seedX, seedY) {
-    var points = [];
-	var seedScanline = function( xLeft, xRight, y ) {
-		var x = xLeft, xEnter,
-			px,
-			pFlag;
-
-		while( x <= xRight ) {
-			// seed the scan line above
-			pFlag = false;
-			for(; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < xRight; x++) {
-				pFlag = true;
-			}
-			if( pFlag ) {
-				if( x === xRight && isBackground(x, y) && !points.some(p => p.x === x && p.y === y)) {
-					stack.push( { x: x, y: y } );
-				} else {
-					stack.push( { x: x - 1, y: y } );
-				}
-			}
-			// continue checking in case the span is interrupted
-			xEnter = x;
-			for(; !isBackground(x, y) || points.some(p => p.x === x && p.y === y) && x < xRight; x++);
-			// make sure that the px coordinate is incremented
-			if( x === xEnter ) {
-				x++;
-			}
-		}	
-	};
-
-	var stack = [];
-    stack.push( { x: seedX, y: seedY } );
-	
-	while( stack.length ) {
-		
-		// get the seed px and set it to the new value
-		var popElem = stack[stack.length-1],
-			x = popElem.x,
-			y = popElem.y;
-
-        //canvas.setPixel( x, y, fillColor );
-        points.push({x, y});
-		stack.length--; // pop
-		
-		var saveX,
-			xLeft, xRight,
-			px;
-		
-		// save the x coordinate of the seed px
-		saveX = x;
-		// fill the span to the left of the seed px
-		for( x--; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x > 0; x--) {
-            points.push({x, y});
-            if (points.length > 10000) {
-                return;
-            }
-			//canvas.setPixel( x, y, fillColor );
-		}
-		// save the extreme left px
-		xLeft = x + 1;
-		
-		// fill the span to the right of the seed px
-		x = saveX;
-		for( x++; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < width; x++) {
-            points.push({x, y});
-            if (points.length > 10000) {
-                return;
-            }
-			//canvas.setPixel( x, y, fillColor );
-		}
-		// save the extreme right px
-		xRight = x - 1;
-		
-		// check that scan line above is neither a polygon boundary nor has
-		// been previously completely filled; if not, seed the scan line
-		// start at the left edge of the scan line subspan
-		seedScanline( xLeft, xRight, y + 1 );
-		
-		// check that the scan line below is ot a polygon boundary
-		// nor has been previously completely filled
-		seedScanline( xLeft, xRight, y - 1 );
-    }
-    fill(random(fillColors) + ALPHA);
-    let res = grahamScan(points);
-    // if (res.length > 5) {
-    //     return;
-    // }
-    beginShape();
-    for (let i = 0; i < res.length; i++) {
-        let cur = res[i];
-        let next = res[i === res.length - 1 ? 0 : i + 1];
-        let slope = getSlope(cur.x, cur.y, next.x, next.y);
-        if (slope !== -Infinity && slope !== Infinity && distance(cur.x, cur.y, next.x, next.y) > 10 && Math.abs(slope) > 0.05 && Math.abs(slope) < 10) {
-            return;
-        }
-    }
-    for (let p of res) {
-        vertex(p.x, p.y);
-    }
-    endShape();
-};
 
 function isBackground(x, y) {
-    return !getPixel(x, y, 1, 1).some(d => d !== 255 && d !== BACKGROUND && (d < 50 || d > 70))
+    return !getPixel(x, y, PIXEL_DENSITY).some(d => d !== 255 && d !== BACKGROUND && (d < BG_BASE_COLOR || d > BG_MAX_COLOR))
 }
 
 
-function gauss() {
-    return round(randomGaussian(GAUSS_CENTER, GAUS_SDT_DEV));
+function lineGauss() {
+    return round(randomGaussian(LINE_MEAN, LINE_STD_DEV));
 }
 
 function* genCollatz(n) {

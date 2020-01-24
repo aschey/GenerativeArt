@@ -1,3 +1,4 @@
+/// <reference path="node_modules/@types/p5/global.d.ts" />
 function getColorInt(hexColorString, pos) {
     return parseInt(hexColorString.substr(pos * 2, 2), 16);
 }
@@ -89,7 +90,95 @@ function grahamScan(points) {
     return result;
 }
 
-function getPixel(x, y) {
+function getPixel(x, y, d) {
     index = round(4 * ((y * d) * width * d + (x * d )));
     return [pixels[index], pixels[index + 1], pixels[index + 2]];
 }
+
+function equiRandom(val) {
+    return random(-1 * val, val);
+}
+
+// See https://en.wikipedia.org/wiki/Flood_fill
+// https://gist.github.com/arcollector/155a8c751f65c15872fb
+function scanlineSeedFilling(seedX, seedY, isBackground) {
+    var points = [];
+	var seedScanline = function( xLeft, xRight, y ) {
+		var x = xLeft, xEnter, pFlag;
+
+		while( x <= xRight ) {
+			// seed the scan line above
+			pFlag = false;
+			for(; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < xRight; x++) {
+				pFlag = true;
+			}
+			if( pFlag ) {
+				if( x === xRight && isBackground(x, y) && !points.some(p => p.x === x && p.y === y)) {
+					stack.push( { x: x, y: y } );
+				} else {
+					stack.push( { x: x - 1, y: y } );
+				}
+			}
+			// continue checking in case the span is interrupted
+			xEnter = x;
+			for(; !isBackground(x, y) || points.some(p => p.x === x && p.y === y) && x < xRight; x++);
+			// make sure that the px coordinate is incremented
+			if( x === xEnter ) {
+				x++;
+			}
+		}	
+	};
+
+	var stack = [];
+    stack.push( { x: seedX, y: seedY } );
+	
+	while( stack.length ) {
+		
+		// get the seed px and set it to the new value
+		var popElem = stack[stack.length-1],
+			x = popElem.x,
+			y = popElem.y;
+
+        //canvas.setPixel( x, y, fillColor );
+        points.push({x, y});
+		stack.length--; // pop
+		
+		var saveX, xLeft, xRight;
+		
+		// save the x coordinate of the seed px
+		saveX = x;
+		// fill the span to the left of the seed px
+		for( x--; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x > 0; x--) {
+            points.push({x, y});
+            if (points.length > 10000) {
+                return [];
+            }
+			//canvas.setPixel( x, y, fillColor );
+		}
+		// save the extreme left px
+		xLeft = x + 1;
+		
+		// fill the span to the right of the seed px
+		x = saveX;
+		for( x++; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < width; x++) {
+            points.push({x, y});
+            if (points.length > 10000) {
+                return [];
+            }
+			//canvas.setPixel( x, y, fillColor );
+		}
+		// save the extreme right px
+		xRight = x - 1;
+		
+		// check that scan line above is neither a polygon boundary nor has
+		// been previously completely filled; if not, seed the scan line
+		// start at the left edge of the scan line subspan
+		seedScanline( xLeft, xRight, y + 1 );
+		
+		// check that the scan line below is ot a polygon boundary
+		// nor has been previously completely filled
+		seedScanline( xLeft, xRight, y - 1 );
+    }
+    
+    return points;
+};
