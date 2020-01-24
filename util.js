@@ -102,53 +102,49 @@ function equiRandom(val) {
 // See https://en.wikipedia.org/wiki/Flood_fill
 // https://gist.github.com/arcollector/155a8c751f65c15872fb
 function scanlineSeedFilling(seedX, seedY, isBackground) {
-    var points = [];
-	var seedScanline = function( xLeft, xRight, y ) {
-		var x = xLeft, xEnter, pFlag;
+    let points = [];
+    let isCurrentBackground = (x, y) => isBackground(x, y) && !points.some(p => p.x === x && p.y === y);
+	let seedScanline = function( xLeft, xRight, y ) {
+		let x = xLeft;
 
-		while( x <= xRight ) {
+		while(x <= xRight) {
 			// seed the scan line above
-			pFlag = false;
-			for(; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < xRight; x++) {
-				pFlag = true;
-			}
-			if( pFlag ) {
-				if( x === xRight && isBackground(x, y) && !points.some(p => p.x === x && p.y === y)) {
-					stack.push( { x: x, y: y } );
-				} else {
-					stack.push( { x: x - 1, y: y } );
-				}
-			}
+			let beginX = x;
+            for(; isCurrentBackground(x, y) && x < xRight; x++);
+            
+            if( x === xRight && isCurrentBackground(x, y)) {
+                stack.push({ x: x, y: y });
+            }
+            else if (x > beginX) {
+                stack.push({ x: x - 1, y: y });
+            }
+            
 			// continue checking in case the span is interrupted
-			xEnter = x;
-			for(; !isBackground(x, y) || points.some(p => p.x === x && p.y === y) && x < xRight; x++);
+			//let xEnter = x;
+			for(x++; !isCurrentBackground(x, y) && x < xRight; x++);
 			// make sure that the px coordinate is incremented
-			if( x === xEnter ) {
-				x++;
-			}
+			//if(x === xEnter) {
+			//	x++;
+			//}
 		}	
 	};
 
 	var stack = [];
-    stack.push( { x: seedX, y: seedY } );
+    stack.push({ x: seedX, y: seedY });
 	
-	while( stack.length ) {
-		
+	while (stack.length > 0) {
 		// get the seed px and set it to the new value
-		var popElem = stack[stack.length-1],
-			x = popElem.x,
-			y = popElem.y;
+        let popElem = stack[stack.length-1];
+        stack = stack.slice(0, stack.length - 1);
+		let x = popElem.x;
+        let y = popElem.y;
 
-        //canvas.setPixel( x, y, fillColor );
         points.push({x, y});
-		stack.length--; // pop
-		
-		var saveX, xLeft, xRight;
 		
 		// save the x coordinate of the seed px
-		saveX = x;
+		let saveX = x;
 		// fill the span to the left of the seed px
-		for( x--; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x > 0; x--) {
+		for( x--; isCurrentBackground(x, y) && x > 0; x--) {
             points.push({x, y});
             if (points.length > 10000) {
                 return [];
@@ -156,11 +152,11 @@ function scanlineSeedFilling(seedX, seedY, isBackground) {
 			//canvas.setPixel( x, y, fillColor );
 		}
 		// save the extreme left px
-		xLeft = x + 1;
+		let xLeft = x + 1;
 		
 		// fill the span to the right of the seed px
 		x = saveX;
-		for( x++; isBackground(x, y) && !points.some(p => p.x === x && p.y === y) && x < width; x++) {
+		for( x++; isCurrentBackground(x, y) && x < width; x++) {
             points.push({x, y});
             if (points.length > 10000) {
                 return [];
@@ -168,7 +164,7 @@ function scanlineSeedFilling(seedX, seedY, isBackground) {
 			//canvas.setPixel( x, y, fillColor );
 		}
 		// save the extreme right px
-		xRight = x - 1;
+		let xRight = x - 1;
 		
 		// check that scan line above is neither a polygon boundary nor has
 		// been previously completely filled; if not, seed the scan line

@@ -132,33 +132,26 @@ function checkPixelColor(x, y) {
     if (!isBackground(x, y)) {
         return false;
     }
-    while (x > 0 && isBackground(x, y)) {
-        x--;
-    }
+    for (; x > 0 && isBackground(x, y); x--);
     if (x === 0 || origX - x > 100) {
         return false;
     }
     x++;
-    data = getPixel(x, y, PIXEL_DENSITY);
-    while (y > 0 && isBackground(x, y)) {
-        y--;
-    }
+
+    for (; y > 0 && isBackground(x, y); y--);
     if (y === 0 || origY - y > 100) {
         return false;
     }
     y++;
+
     topLeft = {x, y};
-    while (x < width && isBackground(x, y)) {
-        x++;
-        data = getPixel(x, y, PIXEL_DENSITY);
-    }
+    for (; x < width && isBackground(x, y); x++);
     if (x === width || x - topLeft.x > 100) {
         return false;
     }
     x--;
-    while (y < height && isBackground(x, y)) {
-        y++;
-    }
+
+    for (; y < height && isBackground(x, y); y++);
     if (y === height || y - topLeft.y > 100) {
         return false;
     }
@@ -172,18 +165,16 @@ function checkPixelColor(x, y) {
     maxY1 = y;
     x = topLeft.x;
     y = topLeft.y;
-    while (y < height && isBackground(x, y)) {
-        y++;
-    }
+    for (; y < height && isBackground(x, y); y++);
     
     if (x === width || x - topLeft.x > 100) {
         return false;
     }
     y--;
-    while (x < width && isBackground(x, y)) {
-        x++;
-    }
+
+    for (; x < width && isBackground(x, y); x++);
     x--;
+    
     if (Math.abs(x - maxX1) > 1 || Math.abs(y - maxY1 > 1)) {
         return false;
     }
