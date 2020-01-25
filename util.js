@@ -1,28 +1,4 @@
 /// <reference path="node_modules/@types/p5/global.d.ts" />
-function getColorInt(hexColorString, pos) {
-    return parseInt(hexColorString.substr(pos * 2, 2), 16);
-}
-
-function hexStringToInts(hexColorString) {
-    // Remove leading #
-    let valsOnly = hexColorString.slice(1, hexColorString.length);
-    return _.range(3).map(i => getColorInt(valsOnly, i));
-}
-
-function getNewColorVal(startVal, colorDiff, percent) {
-    return ((colorDiff * percent) + startVal).toString(16).split('.')[0].padStart(2, '0');
-}
-
-function colorGradient(startColor, endColor, percent) {
-    // get colors
-    let startInts = hexStringToInts(startColor);
-    let endInts = hexStringToInts(endColor);
-
-    // calculate new color
-    let newVals = startInts.map((startVal, i) => getNewColorVal(startVal, endInts[i] - startVal, percent));
-
-    return `#${newVals.join('')}`;
-};
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -178,3 +154,48 @@ function scanlineSeedFilling(seedX, seedY, isBackground) {
     
     return points;
 };
+
+// https://awik.io/determine-color-bright-dark-using-javascript/
+function lightOrDark(color) {
+
+    // Variables for red, green, blue values
+    var r, g, b, hsp;
+    
+    // Check the format of the color, HEX or RGB?
+    if (color.match(/^rgb/)) {
+
+        // If HEX --> store the red, green, blue values in separate variables
+        color = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/);
+        
+        r = color[1];
+        g = color[2];
+        b = color[3];
+    } 
+    else {
+        
+        // If RGB --> Convert it to HEX: http://gist.github.com/983661
+        color = +("0x" + color.slice(1).replace( 
+        color.length < 5 && /./g, '$&$&'));
+
+        r = color >> 16;
+        g = color >> 8 & 255;
+        b = color & 255;
+    }
+    
+    // HSP (Highly Sensitive Poo) equation from http://alienryderflex.com/hsp.html
+    hsp = Math.sqrt(
+    0.299 * (r * r) +
+    0.587 * (g * g) +
+    0.114 * (b * b)
+    );
+
+    // Using the HSP value, determine whether the color is light or dark
+    if (hsp>127.5) {
+
+        return 'light';
+    } 
+    else {
+
+        return 'dark';
+    }
+}

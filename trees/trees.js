@@ -65,16 +65,16 @@ const THICKNESS = 2;
 const BG_THICKNESS = 1;
 // alpha for all colors
 const ALPHA = 'FF';
-
-const bgColorDark = '#101C23';
-const bgColorLight = '#233641'
-const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41'];
+const COLORSCHEME = COLORS.autumn;
+//const bgColorDark = '#101C23';
+//const bgColorLight = '#233641'
+//const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41'];
 
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
 
-    background(bgColorDark);
+    background(COLORSCHEME.background1);
     noLoop();
 }
 
@@ -83,7 +83,7 @@ function draw() {
     strokeWeight(THICKNESS);
     for (let y = START_Y; y < height; y += START_Y) {
         for (let x = START_X; x < width; x += START_X) {
-            drawTree(x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), y + random(PLACE_VAR_MIN, PLACE_VAR_MAX), random(colors));
+            drawTree(x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), y + random(PLACE_VAR_MIN, PLACE_VAR_MAX), random(COLORSCHEME.colors));
         }
     }
 }
@@ -94,7 +94,7 @@ function drawBackground() {
     for (let y = 0; y < height; y += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
         for (let x = 0; x < width; x += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
             let noiseVal = noise(x * X_NOISE_RATIO, y * Y_NOISE_RATIO);
-            let val = colorGradient(bgColorDark, bgColorLight, noiseVal);
+            let val = colorGradient(COLORSCHEME.background1, COLORSCHEME.background2, noiseVal);
             stroke(val + ALPHA);
             point(x, y + random(noiseVal * NOISE_POINT_VAR_MIN, noiseVal * NOISE_POINT_VAR_MAX));
         }
