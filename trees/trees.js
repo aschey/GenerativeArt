@@ -65,7 +65,7 @@ const THICKNESS = 2;
 const BG_THICKNESS = 1;
 // alpha for all colors
 const ALPHA = 'FF';
-const COLORSCHEME = COLORS.autumn;
+const COLORSCHEME = COLORS.winterOrange;
 //const bgColorDark = '#101C23';
 //const bgColorLight = '#233641'
 //const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41'];

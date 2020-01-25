@@ -26,7 +26,7 @@ const BG_DELTA_Y = 10;
 // variance when choosing background coords
 const BG_VAR = 5;
 // background starting color
-const BG_BASE_COLOR = 200;
+const BG_BASE_COLOR = 100;
 // gaussian mean for background
 const BG_MEAN = 10;
 // gaussian std dev for background
@@ -47,6 +47,7 @@ const IGNORE_DIAG_UPPER_SLOPE = 10;
 
 const BG_MAX_COLOR = BG_BASE_COLOR + BG_MEAN + BG_STD_DEV * 2;
 const H = hexStringToInts(COLORSCHEME.background1);
+const H2 = hexStringToInts(COLORSCHEME.background2);
 // calculated below, need to wait until setup is called
 let PIXEL_DENSITY = null;
 
@@ -56,7 +57,8 @@ function setup() {
     background(COLORSCHEME.background1);
     for (let y = BG_DELTA_Y; y < height; y += BG_DELTA_Y) {
         for (let x = BG_DELTA_X; x < width; x += BG_DELTA_X) {
-            let dotColor = BG_BASE_COLOR + randomGaussian(BG_MEAN, BG_STD_DEV);
+            //let dotColor = BG_BASE_COLOR + randomGaussian(BG_MEAN, BG_STD_DEV);
+            let dotColor = colorGradientGaussian(COLORSCHEME.background1, COLORSCHEME.background2, 0.7, 0.2);
             if (dotColor > BG_MAX_COLOR) {
                 dotColor = BG_MAX_COLOR;
             }
@@ -202,7 +204,7 @@ function drawFill(res) {
 }
 
 function isBackground(x, y) {
-    return !getPixel(x, y, PIXEL_DENSITY).some((d, i) => d !== 255 && d !== H[i] && (d < BG_BASE_COLOR || d > BG_MAX_COLOR))
+    return !getPixel(x, y, PIXEL_DENSITY).some((d, i) => d !== 255 && d !== H[i] && (d < H[i] || d > H2[i]))
 }
 
 

@@ -1,7 +1,6 @@
 /// <reference path="node_modules/@types/p5/global.d.ts" />
-function getColorInt(hexColorString, pos) {
-    return parseInt(hexColorString.substr(pos * 2, 2), 16);
-}
+
+const getColorInt = (hexColorString, pos) => parseInt(hexColorString.substr(pos * 2, 2), 16);
 
 function hexStringToInts(hexColorString) {
     // Remove leading #
@@ -9,9 +8,7 @@ function hexStringToInts(hexColorString) {
     return _.range(3).map(i => getColorInt(valsOnly, i));
 }
 
-function getNewColorVal(startVal, colorDiff, percent) {
-    return ((colorDiff * percent) + startVal).toString(16).split('.')[0].padStart(2, '0');
-}
+const getNewColorVal = (startVal, colorDiff, percent) => ((colorDiff * percent) + startVal).toString(16).split('.')[0].padStart(2, '0');
 
 function colorGradient(startColor, endColor, percent) {
     // get colors
@@ -23,6 +20,11 @@ function colorGradient(startColor, endColor, percent) {
 
     return `#${newVals.join('')}`;
 };
+
+function colorGradientGaussian(startColor, endColor, mean, stdDev) {
+    let percent = limitedGaussian(mean, stdDev, 0, 1);
+    return colorGradient(startColor, endColor, percent);
+}
 
 const colorArrayToRgbString = (arr) => `rgb${arr.length < 4 ? '' : 'a'}(${arr.join()})`;
 

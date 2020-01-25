@@ -199,3 +199,10 @@ function lightOrDark(color) {
         return 'dark';
     }
 }
+
+function limitedGaussian(mean, stdDev, lowerBound, upperBound) {
+    let val = randomGaussian(mean, stdDev);
+    val = min(upperBound, val);
+    val = max(lowerBound, val);
+    return val;
+}
