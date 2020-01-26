@@ -8,10 +8,6 @@ const ALPHA = 'FF';
 const MAX_X = 15;
 // Branches cannot go more than n times higher than the trunk height
 const MIN_Y_FACTOR = 2;
-// Max amount to add/subtract from the x value each time
-const X_VAR = 15;
-// Max amount to subtract from the y value each time
-const Y_VAR = 15;
 // Branches off the trunk can start no less than n * trunkHeight from the base of the trunk
 const MIN_Y_THRESH_FACTOR_BOTTOM = 0.1;
 // Branches off the trunk can start no more than n * trunkHeight from the base of the trunk
@@ -32,18 +28,10 @@ const PLACE_VAR_MAX = 20;
 const MIN_TRUNK_HEIGHT = 20;
 // Maximum trunk height
 const MAX_TRUNK_HEIGHT = 50;
-// Minimum branches per tree
-const MIN_BRANCHES = 10;
-// Maximum branches per tree
-const MAX_BRANCHES = 25;
 // Starting x coord to place trees
 const START_X = 50;
 // Starting y coord to place trees
 const START_Y = 50;
-// Minimum similarity ratio for branch slopes within the same tree
-const SLOPE_THRESH_MIN = 0.2;
-// Maximum similarity ratio for branch slopes within the same tree
-const SLOPE_THRESH_MAX = 0.5;
 // Minimum amount of distance allowed between branches
 const DIST_THRESH = 4;
 // Factor to multiply x value by when calculating Perlin noise
@@ -66,8 +54,58 @@ const BG_DELTA_MAX = 2;
 const THICKNESS = 2;
 // Background texture thickness
 const BG_THICKNESS = 1;
-// alpha for all colors
+// Max iterations before terminating generation
+const MAX_ITERS = 1000;
+// Noise threshold for choosing a bush
+const BUSH_THRESH = 0.2;
+// Min trunk height for bushes
+const BUSH_MIN_HEIGHT = 5;
+// Max trunk height for bushes
+const BUSH_MAX_HEIGHT = 10;
+const BUSH_VAR_X = 15;
+const BUSH_VAR_Y = 15;
 
+const TYPES = {
+    normal: {
+        xMean: 0,
+        xStdDev: 7,
+        yMean: -13,
+        yStdDev: 3,
+        minBranches: 10,
+        maxBranches: 25,
+        trunkPropensity: 0.1,
+        maxBranchOffCount: 10,
+        minSlopeThresh: 0.02,
+        maxSlopeThresh: 0.5, 
+        lineSelector: numLines => random(numLines - 1) 
+    },
+    skinny: {
+        xMean: 0,
+        xStdDev: 3,
+        yMean: -10,
+        yStdDev: 3,
+        minBranches: 10,
+        maxBranches: 20,
+        trunkPropensity: 0.3,
+        maxBranchOffCount: 10,
+        minSlopeThresh: 0.02,
+        maxSlopeThresh: 0.5, 
+        lineSelector: numLines => random(numLines - 1)
+    },
+    fat: {
+        xMean: 0,
+        xStdDev: 7,
+        yMean: -3,
+        yStdDev: 2,
+        minBranches: 20,
+        maxBranches: 30,
+        trunkPropensity: 0.7,
+        maxBranchOffCount: 5,
+        minSlopeThresh: 0.01,
+        maxSlopeThresh: 0.01, 
+        lineSelector: numLines => random(numLines - 1)
+    }
+}
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -101,49 +139,72 @@ function drawBackground() {
 
 function drawTree(x, y, color) {
     stroke(color + ALPHA);
-    let trunkHeight = random(MIN_TRUNK_HEIGHT, MAX_TRUNK_HEIGHT);
+    let iters = 0;
+    let type = TYPES[random(Object.keys(TYPES))];
+    let isBush = noise(x * X_NOISE_RATIO, y * Y_NOISE_RATIO) < BUSH_THRESH;
+    let trunkHeight = random(isBush ? BUSH_MIN_HEIGHT : MIN_TRUNK_HEIGHT, isBush ? BUSH_MAX_HEIGHT : MAX_TRUNK_HEIGHT);
     // draw trunk
     line(x, y, x, y - trunkHeight);
-
-    lines = [{x1: x, y1: y, x2: x, y2: y - trunkHeight}];
-    numBranches = random(MIN_BRANCHES, MAX_BRANCHES);
+    let trunk = {x1: x, y1: y, x2: x, y2: y - trunkHeight, branchCount: 0};
+    let lines = [trunk];
+    numBranches = random(type.minBranches, type.maxBranches);
     let yThreshFactorBottom = random(MIN_Y_THRESH_FACTOR_BOTTOM, MAX_Y_THRESH_FACTOR_BOTTOM);
     let yThreshFactorTop = random(MIN_Y_THRESH_FACTOR_TOP, MAX_Y_THRESH_FACTOR_TOP);
     let xThreshEnd = random(MIN_X_THRESH_END, MAX_X_THRESH_END);
-    let slopeThresh = random(SLOPE_THRESH_MIN, SLOPE_THRESH_MAX);
-    while (lines.length < numBranches) {
+    let slopeThresh = random(type.minSlopeThresh, type.maxSlopeThresh);
+
+    while (lines.length < numBranches && iters < MAX_ITERS) {
+        iters++;
+        let availLines = lines.filter(l => l.branchCount < type.maxBranchOffCount).sort(l => l.y);
+        let curLine = isBush || random() < type.trunkPropensity ? trunk : availLines[round(type.lineSelector(availLines.length))];
+        if (curLine === undefined) {
+            debugger;
+        }
         // get a point on the line y = mx + b
-        let curLine = random(lines);
         let slope = getSlope(curLine.x1, curLine.y1, curLine.x2, curLine.y2);
         let intercept = curLine.y1 - (slope * curLine.x1);
-        let x1 = random(curLine.x1 + (xThreshEnd * (curLine.x2 - curLine.x1)), curLine.x2 - (xThreshEnd * (curLine.x2 - curLine.x1)));
+        let x1a = curLine.x1 + (xThreshEnd * (curLine.x2 - curLine.x1));
+        let x1b = curLine.x2 - (xThreshEnd * (curLine.x2 - curLine.x1));
+        let x1Max = max(x1a, x1b);
+        let x1Min = min(x1a, x1b);
+        let x1Diff = x1Max - x1Min;
+        let x1 = limitedGaussian(x1Min + (x1Diff * 0.5), x1Diff, x1Min, x1Max);
+        let y1a = curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2));
+        let y1b = curLine.y2 + (yThreshFactorTop * (curLine.y1 - curLine.y2));
+        let y1Max = max(y1a, y1b);
+        let y1Min = min(y1a, y1b);
+        let y1Diff = y1Max - y1Min;
         let y1 = (Math.abs(slope) === Infinity) 
-            ? random(curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2)), curLine.y2 + (yThreshFactorTop * (curLine.y1 - curLine.y2))) 
+            ? limitedGaussian(y1Min + (y1Diff * 0.5), y1Diff, y1Min, y1Max)
             : slope * x1 + intercept;
-        let x2 = x1 + random(-X_VAR, X_VAR);
-        let y2 = y1 + random(-Y_VAR, 0);
+        let x2 = isBush ? x1 + random(-BUSH_VAR_Y, BUSH_VAR_X) : x1 + randomGaussian(type.xMean, type.xStdDev);
+        let y2 = isBush ? y1 + random(-BUSH_VAR_Y, 0) : y1 + randomGaussian(type.yMean, type.yStdDev);
 
         if (x1 > x + MAX_X || x1 < x - MAX_X || y2 < y - (trunkHeight * MIN_Y_FACTOR)) {
             continue;
         }
         tooSimilar = false;
-        let curSlope = getSlope(x1, y1, x2, y2);
-        for (prevLine of lines) {
-            prevSlope = getSlope(prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2);
-            // Don't allow any lines to intersect, any two slopes to be too similar, or any two end points to be too close
-            if (Math.abs(curSlope === Infinity)||
-                intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
-                prevSlope - slopeThresh <= curSlope && curSlope <= prevSlope + slopeThresh ||
-                distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH) {
-                tooSimilar = true;
-                break;
+        if (!isBush) {
+            let curSlope = getSlope(x1, y1, x2, y2);
+            for (prevLine of lines) {
+                prevSlope = getSlope(prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2);
+                // Don't allow any lines to intersect, any two slopes to be too similar, or any two end points to be too close
+                if (Math.abs(curSlope === Infinity)||
+                    intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
+                    prevSlope - slopeThresh <= curSlope && curSlope <= prevSlope + slopeThresh ||
+                    distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH) {
+                    tooSimilar = true;
+                    break;
+                }
+            };
+            if (tooSimilar) {
+                continue;
             }
-        };
-        if (tooSimilar) {
-            continue;
         }
+        
         line(x1, y1, x2, y2);
-        lines.push({x1, y1, x2, y2});
+        lines.push({x1, y1, x2, y2, branchCount: 0});
+        curLine.branchCount++;
     }
 }
 

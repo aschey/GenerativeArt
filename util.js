@@ -72,7 +72,7 @@ function getPixel(x, y, d) {
 }
 
 function equiRandom(val) {
-    return random(-1 * val, val);
+    return random(-val, val);
 }
 
 // See https://en.wikipedia.org/wiki/Flood_fill
