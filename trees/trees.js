@@ -1,6 +1,9 @@
 /// <reference path="../node_modules/@types/p5/global.d.ts" />
 /// <reference path="../util.js" />
 
+const COLORSCHEME = COLORS.winterOrange;
+const ALPHA = 'FF';
+
 // Max x distance from trunk on either side
 const MAX_X = 15;
 // Branches cannot go more than n times higher than the trunk height
@@ -64,11 +67,6 @@ const THICKNESS = 2;
 // Background texture thickness
 const BG_THICKNESS = 1;
 // alpha for all colors
-const ALPHA = 'FF';
-const COLORSCHEME = COLORS.winterOrange;
-//const bgColorDark = '#101C23';
-//const bgColorLight = '#233641'
-//const colors = ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41'];
 
 
 function setup() {

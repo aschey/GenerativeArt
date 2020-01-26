@@ -25,14 +25,14 @@ const COLORS = {
         background2: '#4C566A',
         foreground1: '#ECEFF4',
         foreground2: '#D8DEE9',
-        colors: ['#8FBCBB', '#88C0D0', '#81A1C1', '#5E81AC', '#BF616A', '#D08770', '#EBCB8B', '#A3BE8C', '#B48EAD']
+        colors: ['#8FBCBB', '#88C0D0', '#81A1C1', '#5E81AC', '#A3BE8C', '#B48EAD']
     },
     nordLight: {
         background1: '#ECEFF4',
-        background2: '#D8DEE9',
+        background2: '#858a94',
         foreground1: '#4C566A',
         foreground2: '#2E3440',
-        colors: ['#8FBCBB', '#88C0D0', '#81A1C1', '#5E81AC', '#BF616A', '#D08770', '#EBCB8B', '#A3BE8C', '#B48EAD']
+        colors: ['#8FBCBB', '#88C0D0', '#81A1C1', '#5E81AC', '#A3BE8C', '#B48EAD']
     },
     winterOrange: {
         background1: '#fafafa',
