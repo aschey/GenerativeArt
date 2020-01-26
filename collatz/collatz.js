@@ -71,8 +71,14 @@ function setup() {
 }
 function draw() {
     for (let res of doCollatz()) {
-        stroke(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2, noise(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO)));
-        line(res.prevX + lineGauss() , res.prevY + lineGauss(), res.nextX + lineGauss(), res.nextY + lineGauss());
+        if (random() < res.prevY / height) {
+            stroke(random(COLORSCHEME.colors) + ALPHA);
+            line(res.prevX, res.prevY, res.nextX, res.nextY);
+        }
+        else {
+            stroke(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2, noise(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO)));
+            line(res.prevX + lineGauss() , res.prevY + lineGauss(), res.nextX + lineGauss(), res.nextY + lineGauss());
+        }
         
     }
     for (let res of doCollatz()) {
@@ -82,6 +88,7 @@ function draw() {
         }
         
     }
+    
     loadPixels();
     noStroke();
     for (let y = SQUARES_START_Y; y < height; y += SQUARES_DELTA_Y) {
