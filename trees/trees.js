@@ -117,7 +117,7 @@ function drawTree(x, y, color) {
         let slope = getSlope(curLine.x1, curLine.y1, curLine.x2, curLine.y2);
         let intercept = curLine.y1 - (slope * curLine.x1);
         let x1 = random(curLine.x1 + (xThreshEnd * (curLine.x2 - curLine.x1)), curLine.x2 - (xThreshEnd * (curLine.x2 - curLine.x1)));
-        let y1 = (slope === Infinity || slope === -Infinity) 
+        let y1 = (Math.abs(slope) === Infinity) 
             ? random(curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2)), curLine.y2 + (yThreshFactorTop * (curLine.y1 - curLine.y2))) 
             : slope * x1 + intercept;
         let x2 = x1 + random(-X_VAR, X_VAR);
@@ -131,7 +131,7 @@ function drawTree(x, y, color) {
         for (prevLine of lines) {
             prevSlope = getSlope(prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2);
             // Don't allow any lines to intersect, any two slopes to be too similar, or any two end points to be too close
-            if (curSlope === Infinity || curSlope === -Infinity ||
+            if (Math.abs(curSlope === Infinity)||
                 intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
                 prevSlope - slopeThresh <= curSlope && curSlope <= prevSlope + slopeThresh ||
                 distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH) {

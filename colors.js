@@ -16,8 +16,8 @@ const COLORS = {
     autumn: {
         background1: '#101C23',
         background2: '#233641',
-        foreground1: '#bdd0db',
-        foreground2: '#cddce4',
+        foreground1: '#acbcc7',
+        foreground2: '#a5b1bb',
         colors: ['#743A15', '#735C20', '#4A583B', '#2D473F', '#393E41']
     },
     nordDark: {
