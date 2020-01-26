@@ -21,17 +21,17 @@ const MIN_X_THRESH_END = 0.1;
 // Max percentage of the end of the branch to allow creating new branches off of
 const MAX_X_THRESH_END = 0.7;
 // Minimum variance from START_X or START_Y to place a new tree
-const PLACE_VAR_MIN = -10;
+const PLACE_VAR_MIN = -20;
 // Maximum variance from START_X or START_Y to place a new tree
-const PLACE_VAR_MAX = 20;
+const PLACE_VAR_MAX = 10;
 // Minimum trunk height
 const MIN_TRUNK_HEIGHT = 20;
 // Maximum trunk height
 const MAX_TRUNK_HEIGHT = 50;
 // Starting x coord to place trees
-const START_X = 50;
+const START_X = 60;
 // Starting y coord to place trees
-const START_Y = 50;
+const START_Y = 60;
 // Minimum amount of distance allowed between branches
 const DIST_THRESH = 4;
 // Factor to multiply x value by when calculating Perlin noise
@@ -77,6 +77,8 @@ const TYPES = {
         maxBranchOffCount: 10,
         minSlopeThresh: 0.02,
         maxSlopeThresh: 0.5, 
+        probMin: 0.0,
+        probMax: 0.6,
         lineSelector: numLines => random(numLines - 1) 
     },
     skinny: {
@@ -84,12 +86,14 @@ const TYPES = {
         xStdDev: 3,
         yMean: -10,
         yStdDev: 3,
-        minBranches: 10,
-        maxBranches: 20,
+        minBranches: 15,
+        maxBranches: 25,
         trunkPropensity: 0.3,
         maxBranchOffCount: 10,
         minSlopeThresh: 0.02,
         maxSlopeThresh: 0.5, 
+        probMin: 0.6, 
+        probMax: 0.8,
         lineSelector: numLines => random(numLines - 1)
     },
     fat: {
@@ -103,6 +107,8 @@ const TYPES = {
         maxBranchOffCount: 5,
         minSlopeThresh: 0.01,
         maxSlopeThresh: 0.01, 
+        probMin: 0.8, 
+        probMax: 1.0,
         lineSelector: numLines => random(numLines - 1)
     }
 }
@@ -140,7 +146,9 @@ function drawBackground() {
 function drawTree(x, y, color) {
     stroke(color + ALPHA);
     let iters = 0;
-    let type = TYPES[random(Object.keys(TYPES))];
+    typeProb = random();
+    Object.keys(TYPES).filter(t => TYPES[t].probMin <= typeProb && TYPES[t].probMax > typeProb)[0]
+    let type = TYPES[Object.keys(TYPES).filter(t => TYPES[t].probMin <= typeProb && TYPES[t].probMax > typeProb)[0]];
     let isBush = noise(x * X_NOISE_RATIO, y * Y_NOISE_RATIO) < BUSH_THRESH;
     let trunkHeight = random(isBush ? BUSH_MIN_HEIGHT : MIN_TRUNK_HEIGHT, isBush ? BUSH_MAX_HEIGHT : MAX_TRUNK_HEIGHT);
     // draw trunk
