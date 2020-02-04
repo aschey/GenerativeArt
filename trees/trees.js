@@ -33,7 +33,7 @@ const START_X = 60;
 // Starting y coord to place trees
 const START_Y = 60;
 // Minimum amount of distance allowed between branches
-const DIST_THRESH = 4;
+const DIST_THRESH = 3;
 // Factor to multiply x value by when calculating Perlin noise
 const X_NOISE_RATIO = 0.01;
 // Factor to multiply y value by when calculating Perlin noise
@@ -55,7 +55,7 @@ const THICKNESS = 2;
 // Background texture thickness
 const BG_THICKNESS = 1;
 // Max iterations before terminating generation
-const MAX_ITERS = 1000;
+const MAX_ITERS = 100000;
 // Noise threshold for choosing a bush
 const BUSH_THRESH = 0.2;
 // Min trunk height for bushes
@@ -101,8 +101,8 @@ const TYPES = {
         xStdDev: 7,
         yMean: -3,
         yStdDev: 2,
-        minBranches: 20,
-        maxBranches: 30,
+        minBranches: 25,
+        maxBranches: 35,
         trunkPropensity: 0.7,
         maxBranchOffCount: 5,
         minSlopeThresh: 0.01,
@@ -147,13 +147,13 @@ function drawTree(x, y, color) {
     stroke(color + ALPHA);
     let iters = 0;
     typeProb = random();
-    Object.keys(TYPES).filter(t => TYPES[t].probMin <= typeProb && TYPES[t].probMax > typeProb)[0]
+    
     let type = TYPES[Object.keys(TYPES).filter(t => TYPES[t].probMin <= typeProb && TYPES[t].probMax > typeProb)[0]];
     let isBush = noise(x * X_NOISE_RATIO, y * Y_NOISE_RATIO) < BUSH_THRESH;
     let trunkHeight = random(isBush ? BUSH_MIN_HEIGHT : MIN_TRUNK_HEIGHT, isBush ? BUSH_MAX_HEIGHT : MAX_TRUNK_HEIGHT);
     // draw trunk
     line(x, y, x, y - trunkHeight);
-    let trunk = {x1: x, y1: y, x2: x, y2: y - trunkHeight, branchCount: 0};
+    let trunk = {x1: x, y1: y, x2: x, y2: y - trunkHeight, branchCount: 0, level: 0};
     let lines = [trunk];
     numBranches = random(type.minBranches, type.maxBranches);
     let yThreshFactorBottom = random(MIN_Y_THRESH_FACTOR_BOTTOM, MAX_Y_THRESH_FACTOR_BOTTOM);
@@ -163,18 +163,15 @@ function drawTree(x, y, color) {
 
     while (lines.length < numBranches && iters < MAX_ITERS) {
         iters++;
-        let availLines = lines.filter(l => l.branchCount < type.maxBranchOffCount).sort(l => l.y);
+        let availLines = lines.filter(l => l.branchCount < type.maxBranchOffCount && l.level < 3).sort(l => l.y);
         let curLine = isBush || random() < type.trunkPropensity ? trunk : availLines[round(type.lineSelector(availLines.length))];
-        if (curLine === undefined) {
-            debugger;
-        }
         // get a point on the line y = mx + b
         let slope = getSlope(curLine.x1, curLine.y1, curLine.x2, curLine.y2);
         let intercept = curLine.y1 - (slope * curLine.x1);
         let x1a = curLine.x1 + (xThreshEnd * (curLine.x2 - curLine.x1));
         let x1b = curLine.x2 - (xThreshEnd * (curLine.x2 - curLine.x1));
-        let x1Max = max(x1a, x1b);
-        let x1Min = min(x1a, x1b);
+        let x1Max = min(max(x1a, x1b), trunk.x1 + MAX_X);
+        let x1Min = max(min(x1a, x1b), trunk.x1 - MAX_X);
         let x1Diff = x1Max - x1Min;
         let x1 = limitedGaussian(x1Min + (x1Diff * 0.5), x1Diff, x1Min, x1Max);
         let y1a = curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2));
@@ -187,20 +184,32 @@ function drawTree(x, y, color) {
             : slope * x1 + intercept;
         let x2 = isBush ? x1 + random(-BUSH_VAR_Y, BUSH_VAR_X) : x1 + randomGaussian(type.xMean, type.xStdDev);
         let y2 = isBush ? y1 + random(-BUSH_VAR_Y, 0) : y1 + randomGaussian(type.yMean, type.yStdDev);
-
-        if (x1 > x + MAX_X || x1 < x - MAX_X || y2 < y - (trunkHeight * MIN_Y_FACTOR)) {
-            continue;
+        y2 = max(y2, trunk.y1 - (trunkHeight * MIN_Y_FACTOR));
+        let maxDistance = min([
+            8 * (3 - curLine.level), 
+            trunkHeight - distance(trunk.x1, trunk.y1, trunk.x2, y1), 
+            distance(curLine.x1, curLine.y1, curLine.x2, curLine.y2)
+        ]);
+        if (!isBush && distance(x1, y1, x2, y2) > maxDistance) {
+            let r =  maxDistance / distance(x1, y1, x2, y2) * random();
+            let newX = x1 + ((x2 - x1) * r);
+            let oldSlope = getSlope(x1, y1, x2, y2);
+            let oldIntercept = y1 - (oldSlope * x1);
+            y2 = oldSlope * newX + oldIntercept;
+            x2 = newX;
         }
+        
         tooSimilar = false;
         if (!isBush) {
             let curSlope = getSlope(x1, y1, x2, y2);
             for (prevLine of lines) {
                 prevSlope = getSlope(prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2);
                 // Don't allow any lines to intersect, any two slopes to be too similar, or any two end points to be too close
-                if (Math.abs(curSlope === Infinity)||
+                if (Math.abs(curSlope === Infinity) ||
                     intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
                     prevSlope - slopeThresh <= curSlope && curSlope <= prevSlope + slopeThresh ||
-                    distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH) {
+                    distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH
+                    ) {
                     tooSimilar = true;
                     break;
                 }
@@ -211,9 +220,10 @@ function drawTree(x, y, color) {
         }
         
         line(x1, y1, x2, y2);
-        lines.push({x1, y1, x2, y2, branchCount: 0});
+        lines.push({x1, y1, x2, y2, branchCount: 0, level: curLine.level + 1});
         curLine.branchCount++;
     }
+    console.log(iters);
 }
 
 
