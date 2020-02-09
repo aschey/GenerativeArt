@@ -159,3 +159,6 @@ function limitedGaussian(mean, stdDev, lowerBound, upperBound) {
     val = max(lowerBound, val);
     return val;
 }
+
+const maxYVal = (x1, x2, y1, distance) => Math.sqrt(Math.abs(Math.pow(distance, 2) - Math.pow(x2 - x1, 2))) + y1;
+const maxXVal = (x1, y1, y2, distance) => Math.sqrt(Math.abs(Math.pow(distance, 2) - Math.pow(y2 - y1, 2))) + x1;
