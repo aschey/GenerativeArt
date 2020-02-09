@@ -12,6 +12,7 @@ const BASE_B = 100;
 function setup() {
     let density = 30000;
     createCanvas(max(windowWidth, 6000 * SPACING), windowHeight);
+    background(200);
     //frameRate(5);
     //colorMode(HSB, 100);
     // background(BASE_H, BASE_S, BASE_B)
