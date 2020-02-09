@@ -64,6 +64,8 @@ const BUSH_MIN_HEIGHT = 5;
 const BUSH_MAX_HEIGHT = 10;
 const BUSH_VAR_X = 15;
 const BUSH_VAR_Y = 15;
+const BUSH_MIN_BRANCHES = 15;
+const BUSH_MAX_BRANCHES = 25;
 
 const TYPES = {
     normal: {
@@ -78,7 +80,9 @@ const TYPES = {
         minSlopeThresh: 0.02,
         maxSlopeThresh: 0.5, 
         probMin: 0.0,
-        probMax: 0.6,
+        probMax: 0.5,
+        xDiffRatio: 0.5,
+        yDiffRatio: 0.5,
         lineSelector: numLines => random(numLines - 1) 
     },
     skinny: {
@@ -92,8 +96,10 @@ const TYPES = {
         maxBranchOffCount: 10,
         minSlopeThresh: 0.02,
         maxSlopeThresh: 0.5, 
-        probMin: 0.6, 
-        probMax: 0.8,
+        probMin: 0.5, 
+        probMax: 0.7,
+        xDiffRatio: 0.1,
+        yDiffRatio: 0.9,
         lineSelector: numLines => random(numLines - 1)
     },
     fat: {
@@ -107,9 +113,11 @@ const TYPES = {
         maxBranchOffCount: 5,
         minSlopeThresh: 0.01,
         maxSlopeThresh: 0.01, 
-        probMin: 0.8, 
+        probMin: 0.7, 
         probMax: 1.0,
-        lineSelector: numLines => random(numLines - 1)
+        xDiffRatio: 1,
+        yDiffRatio: 0.1,
+        lineSelector: numLines => limitedGaussian(numLines * 0.25, numLines * 0.25, 0, numLines - 1)
     }
 }
 
@@ -155,7 +163,7 @@ function drawTree(x, y, color) {
     line(x, y, x, y - trunkHeight);
     let trunk = {x1: x, y1: y, x2: x, y2: y - trunkHeight, branchCount: 0, level: 0};
     let lines = [trunk];
-    numBranches = random(type.minBranches, type.maxBranches);
+    numBranches = isBush ? random(BUSH_MIN_BRANCHES, BUSH_MAX_BRANCHES) : random(type.minBranches, type.maxBranches);
     let yThreshFactorBottom = random(MIN_Y_THRESH_FACTOR_BOTTOM, MAX_Y_THRESH_FACTOR_BOTTOM);
     let yThreshFactorTop = random(MIN_Y_THRESH_FACTOR_TOP, MAX_Y_THRESH_FACTOR_TOP);
     let xThreshEnd = random(MIN_X_THRESH_END, MAX_X_THRESH_END);
@@ -173,17 +181,17 @@ function drawTree(x, y, color) {
         let x1Max = min(max(x1a, x1b), trunk.x1 + MAX_X);
         let x1Min = max(min(x1a, x1b), trunk.x1 - MAX_X);
         let x1Diff = x1Max - x1Min;
-        let x1 = limitedGaussian(x1Min + (x1Diff * 0.5), x1Diff, x1Min, x1Max);
+        let x1 = limitedGaussian(x1Min + (x1Diff * type.xDiffRatio), x1Diff, x1Min, x1Max);
         let y1a = curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2));
         let y1b = curLine.y2 + (yThreshFactorTop * (curLine.y1 - curLine.y2));
         let y1Max = max(y1a, y1b);
         let y1Min = min(y1a, y1b);
         let y1Diff = y1Max - y1Min;
         let y1 = (Math.abs(slope) === Infinity) 
-            ? limitedGaussian(y1Min + (y1Diff * 0.5), y1Diff, y1Min, y1Max)
+            ? limitedGaussian(y1Min + (y1Diff * type.yDiffRatio), y1Diff, y1Min, y1Max)
             : slope * x1 + intercept;
-        let x2 = isBush ? x1 + random(-BUSH_VAR_Y, BUSH_VAR_X) : x1 + randomGaussian(type.xMean, type.xStdDev);
-        let y2 = isBush ? y1 + random(-BUSH_VAR_Y, 0) : y1 + randomGaussian(type.yMean, type.yStdDev);
+        let x2 = isBush ? x1 + equiRandom(BUSH_VAR_X) : x1 + randomGaussian(type.xMean, type.xStdDev);
+        let y2 = isBush ? y1 + random(-BUSH_VAR_Y * (lines.length / numBranches), 0) : y1 + randomGaussian(type.yMean, type.yStdDev);
         y2 = max(y2, trunk.y1 - (trunkHeight * MIN_Y_FACTOR));
         let maxDistance = min([
             8 * (3 - curLine.level), 
@@ -223,7 +231,6 @@ function drawTree(x, y, color) {
         lines.push({x1, y1, x2, y2, branchCount: 0, level: curLine.level + 1});
         curLine.branchCount++;
     }
-    console.log(iters);
 }
 
 
