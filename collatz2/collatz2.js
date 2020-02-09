@@ -1,8 +1,8 @@
 /// <reference path="../node_modules/@types/p5/global.d.ts" />
 
 const START_N = 1;
-const END_N = 1011;
-const SPACING = 0.5;
+const END_N = 1000;
+const SPACING = 0.3;
 const DELTA = 5;
 const scribble = new Scribble();
 const BASE_H = 15;
@@ -11,9 +11,9 @@ const BASE_B = 100;
 
 function setup() {
     let density = 30000;
-    createCanvas(windowWidth, 1200);
-    frameRate(5);
-    colorMode(HSB, 100);
+    createCanvas(max(windowWidth, 6000 * SPACING), windowHeight);
+    //frameRate(5);
+    //colorMode(HSB, 100);
     // background(BASE_H, BASE_S, BASE_B)
     // for(let i = 0; i < density; i++) {
     //     stroke(
@@ -38,7 +38,7 @@ function setup() {
 }
 
 async function draw() {
-    translate(500, 500);
+    translate(width / 2, height / 2);
     let startX = 0;
     let startY = 0;
     //let fr = r => r;
@@ -51,9 +51,10 @@ async function draw() {
     //let ftheta = theta => theta;
     //let fr = r => r;
     //let ftheta = theta => asin(theta);
-    drawShape(r => acos(r), theta => cos(theta), 0, 0);
-    drawShape(r => r, theta => asin(theta), 0, width / 3);
-    drawShape(r => sin(r)*asin(r), theta => theta, 0, 2 * width / 3);
+    let delta = width / 3;
+    drawShape(r => acos(r), theta => cos(theta), 0, -delta);
+    drawShape(r => r, theta => asin(theta), 0, 0);
+    drawShape(r => sin(r)*asin(r), theta => theta, 0, delta);
 }
 
 function drawShape(fr, ftheta, startX, startY) {
