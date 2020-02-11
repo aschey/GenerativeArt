@@ -77,7 +77,9 @@ function draw() {
         }
         else {
             stroke(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2, noise(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO)));
-            line(res.prevX + lineGauss() , res.prevY + lineGauss(), res.nextX + lineGauss(), res.nextY + lineGauss());
+            let gx = lineGauss();
+            let gy = lineGauss();
+            line(res.prevX + gx, res.prevY + gy, res.nextX + gx, res.nextY + gy);
         }
         
     }
