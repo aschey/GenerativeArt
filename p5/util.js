@@ -1,7 +1,23 @@
-/// <reference path="node_modules/@types/p5/global.d.ts" />
-
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function random(args) {
+    if (!arguments || arguments.length === 0) {
+        return Math.random();
+    }
+    if (arguments.length === 1) {
+        let val = arguments[0];
+        if (typeof(val) === 'number') {
+            return Math.random() * val;
+        }
+        return val[Math.floor(Math.random() * val.length)];
+    }
+    if (arguments.length === 2) {
+        let min = arguments[0];
+        let max = arguments[1];
+        return Math.random() * (max - min) + min;
+    }
 }
 
 function intersects(x1a, y1a, x2a, y2a, x1b, y1b, x2b, y2b) {
@@ -155,10 +171,90 @@ function scanlineSeedFilling(seedX, seedY, isBackground) {
 
 function limitedGaussian(mean, stdDev, lowerBound, upperBound) {
     let val = randomGaussian(mean, stdDev);
-    val = min(upperBound, val);
-    val = max(lowerBound, val);
+    val = Math.min(upperBound, val);
+    val = Math.max(lowerBound, val);
     return val;
 }
 
 const maxYVal = (x1, x2, y1, distance) => Math.sqrt(Math.abs(Math.pow(distance, 2) - Math.pow(x2 - x1, 2))) + y1;
 const maxXVal = (x1, y1, y2, distance) => Math.sqrt(Math.abs(Math.pow(distance, 2) - Math.pow(y2 - y1, 2))) + x1;
+
+const polarToCartesian = (r, theta) => ({ x: r * cos(theta), y: r * sin(theta)});
+
+const range2d = (start1, end1, step1, start2, end2, step2, label1, label2) => (_.product(_.range(start1, end1, step1), _.range(start2, end2, step2)).map(pair => ({[label1]: pair[0], [label2]: pair[1]})));
+const cRange2d = (start1, end1, step1, start2, end2, step2) => range2d(start1, end1, step1, start2, end2, step2, 'y', 'x');
+
+function worker(seq, workerFile, workerFunc) {
+    const numIters = seq.length - 1;
+    let maxThreads = Math.min(navigator.hardwareConcurrency - 1, numIters);
+    let batchSize = Math.max(Math.ceil(numIters / maxThreads), 1);
+
+    numThreads = numIters / batchSize;
+    let threads = [];
+
+    for (let iter = 0; iter < numThreads; iter++) {
+        const func = Comlink.wrap(new Worker(workerFile));
+        threads.push(workerFunc(func, seq[iter * batchSize], seq[Math.min((iter + 1) * batchSize, numIters)]));
+    }
+
+    return Promise.all(threads);
+} 
+
+let t0 = null;
+function startPerfTimer() {
+    t0 = performance.now();
+}
+
+function endPerfTimer() {
+    let t1 = performance.now();
+    console.log("Call took " + (t1 - t0) + " milliseconds.");
+    t0 = null;
+}
+
+function perlin(x, y, octaves, persistence) {
+    let total = 0;
+    let frequency = 1;
+    let amplitude = 1;
+    let maxValue = 0;
+    for (var i = 0; i < octaves; i++) {
+        total += noise.perlin2(x * frequency, y * frequency) * amplitude;
+        maxValue += amplitude;
+        amplitude *= persistence;
+        frequency *= 2;
+    }
+    return (total/maxValue + 1) * 0.5;
+}
+
+function perlin2(x, y, octaves, persistence) {
+    let total = 0;
+    let frequency = 1;
+    let amplitude = 1;
+    let maxValue = 0;
+    for (var i = 0; i < octaves; i++) {
+        total += Math.abs(noise.perlin2(x * frequency, y * frequency)) * amplitude;
+        maxValue += amplitude;
+        amplitude *= persistence;
+        frequency *= 2;
+    }
+    
+    return Math.min(total/maxValue * 2, 1.0);
+}
+
+function getImage() {
+    let url;
+    requestAnimationFrame(() => url = window.app.renderer.view.toDataURL('image/png',1));
+    setTimeout(() => {
+        let img = document.createElement('img');
+        img.src = url;
+        document.body.appendChild(img);
+    }, 500);
+    
+}
+// var newY = renderer.height - p.y - 1;
+// requestAnimationFrame(() => p = app.renderer.plugins.extract.pixels())
+
+// https://stackoverflow.com/questions/25582882/javascript-math-random-normal-distribution-gaussian-bell-curve
+function randomGaussian(mean, sigma) {
+    let u = Math.random()*0.682;
+    return ((u % 1e-8 > 5e-9 ? 1 : -1) * (Math.sqrt(-Math.log(Math.max(1e-9, u)))-0.618))*1.618 * sigma + mean;
+  }

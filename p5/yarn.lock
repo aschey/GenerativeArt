@@ -12,6 +12,11 @@
   resolved "https://registry.yarnpkg.com/@types/p5/-/p5-0.9.0.tgz#aea0afe6ab2f7368b000165a27869cee8f9060a7"
   integrity sha512-GhI0ctGdKlnf1oUEYqE+sTWuGHhjQCZXQPxazdI9Lx2eE6z7qO6T55FGFenOY3wpL8jSzLWRmt83RHGblr4AWg==
 
+comlink@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/comlink/-/comlink-4.2.0.tgz#be9e968a19d797a44a042cf1eac03775d2ed39fe"
+  integrity sha512-33hF3yYzZicIWLREuvluTGSZkbAXYwRmrA9IYQo0/P+0O45qgvzR0FHX4tRZztObFMTs/RhnN0G0UBNDAZSiCg==
+
 complex.js@^2.0.11:
   version "2.0.11"
   resolved "https://registry.yarnpkg.com/complex.js/-/complex.js-2.0.11.tgz#09a873fbf15ffd8c18c9c2201ccef425c32b8bf1"
@@ -37,6 +42,11 @@ javascript-natural-sort@^0.7.1:
   resolved "https://registry.yarnpkg.com/javascript-natural-sort/-/javascript-natural-sort-0.7.1.tgz#f9e2303d4507f6d74355a73664d1440fb5a0ef59"
   integrity sha1-+eIwPUUH9tdDVac2ZNFED7Wg71k=
 
+lodash.product@^18.9.19:
+  version "18.9.19"
+  resolved "https://registry.yarnpkg.com/lodash.product/-/lodash.product-18.9.19.tgz#c1f49a4b447869290a8799c29295703fda294835"
+  integrity sha512-yPX6KO0jveBR/DjSngqvUEynWTb4oJwB8g5WseShPzX0CO8pjX1gxlR5Fo7V3E81uPDc9mEuNVw3Ah6df9uy0g==
+
 lodash@^4.17.15:
   version "4.17.15"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
@@ -60,6 +70,11 @@ p5@^0.10.2:
   version "0.10.2"
   resolved "https://registry.yarnpkg.com/p5/-/p5-0.10.2.tgz#9437b28e803b9c8a94383c6b5f4d05b13603e1cc"
   integrity sha512-kZnC7JllCEnEUTB3sv2iETUg1ulNvB60h3MHb63u7W/nCJc3XIlMGXcKk28cuezdQ7TOlKScm0qmWCsol+302Q==
+
+pixi@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/pixi/-/pixi-0.3.1.tgz#858cd6164a32a1e4b41192cdf5c6d98209300ba8"
+  integrity sha1-hYzWFkoyoeS0EZLN9cbZggkwC6g=
 
 seed-random@^2.2.0:
   version "2.2.0"
