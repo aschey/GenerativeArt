@@ -3,19 +3,15 @@
 
 let minBgVals = null;
 let maxBgVals = null;
-// calculated below, need to wait until setup is called
-let PIXEL_DENSITY = null;
 let pixels = null;
 let width = 0;
 let height = 0;
 let bufferWidth = 0;
 
 document.addEventListener("DOMContentLoaded", async function() {
-    PIXEL_DENSITY = 1 / window.devicePixelRatio;
     const manager = new AppManager();
     width = manager.width;
     height = manager.height;
-    console.log(height);
     manager.app.renderer.backgroundColor = getColorInt(COLORSCHEME.background1);
 
     let bg1Vals = hexStringToInts(COLORSCHEME.background1);
@@ -72,7 +68,6 @@ function draw(manager, width, height) {
     requestAnimationFrame(() => {
         let gl = document.getElementsByTagName('canvas')[0].getContext('webgl2', {preserveDrawingBuffer: true});
         pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
-        console.log(pixels.length);
         gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
         bufferWidth = gl.drawingBufferWidth;
 
@@ -85,6 +80,8 @@ function draw(manager, width, height) {
                     let res = grahamScan(points);
                     if (res.length > 3) {
                         drawFill(res, manager);
+                        //x += Math.round(random(1, 10));
+                        //y += Math.round(random(1, 10));
                     }
                 }
             }
@@ -173,7 +170,7 @@ function checkPixelColor(x, y) {
 }
 
 function drawFill(res, manager) {
-    manager.graphics.beginFill(getColorInt(random(COLORSCHEME.colors)));
+    manager.graphics.beginFill(getColorInt(random(COLORSCHEME.colors)), getColorInt(ALPHA) / getColorInt('FF'));
     for (let i = 0; i < res.length; i++) {
         let cur = res[i];
         let next = res[i === res.length - 1 ? 0 : i + 1];
@@ -195,7 +192,7 @@ function drawFill(res, manager) {
     manager.graphics.endFill();
 }
 
-const isBackground = (x, y) => x < width && y < height && getPixel(pixels, x, y, bufferWidth, PIXEL_DENSITY).every((d, i) => d >= minBgVals[i] && d <= maxBgVals[i]);
+const isBackground = (x, y) => x < width && y < height && getPixel(pixels, x, y, bufferWidth).every((d, i) => d >= minBgVals[i] && d <= maxBgVals[i]);
 
 function lineGauss() {
     return Math.round(randomGaussian(LINE_MEAN, LINE_STD_DEV));

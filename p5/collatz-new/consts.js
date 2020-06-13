@@ -30,12 +30,12 @@ const BG_STD_DEV = 0.2;
 // start y value for adding fill squares
 const SQUARES_START_Y = 25;
 // change in y value for adding fill squares
-const SQUARES_DELTA_Y = 25;
+const SQUARES_DELTA_Y = Math.round(25 * (1 / window.devicePixelRatio));
 // change in x value for adding fill squares
-const SQUARES_DELTA_X = 25;
+const SQUARES_DELTA_X = Math.round(25 * (1 / window.devicePixelRatio));
 // variance when choosing coords for fill squares
 const SQUARES_VAR = 12;
-const MAX_SQUARE_SIDE = 100;
+const MAX_SQUARE_SIDE = 100 * (1 / window.devicePixelRatio);
 const IGNORE_DIAG_LENGTH = 10;
 const IGNORE_DIAG_LOWER_SLOPE = 0.05;
 const IGNORE_DIAG_UPPER_SLOPE = 10;
