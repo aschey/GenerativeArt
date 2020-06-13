@@ -82,8 +82,8 @@ function grahamScan(points) {
     return result;
 }
 
-function getPixel(x, y, d) {
-    index = round(4 * ((y * d) * width * d + (x * d )));
+function getPixel(pixels, x, y, d) {
+    let index = Math.round(4 * ((y * d) * width * d + (x * d )));
     return [pixels[index], pixels[index + 1], pixels[index + 2]];
 }
 
@@ -257,4 +257,4 @@ function getImage() {
 function randomGaussian(mean, sigma) {
     let u = Math.random()*0.682;
     return ((u % 1e-8 > 5e-9 ? 1 : -1) * (Math.sqrt(-Math.log(Math.max(1e-9, u)))-0.618))*1.618 * sigma + mean;
-  }
+}

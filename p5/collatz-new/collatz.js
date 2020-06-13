@@ -1,113 +1,86 @@
 /// <reference path="../node_modules/@types/p5/global.d.ts" />
 /// <reference path="../util.js" />
 
-const COLORSCHEME = COLORS.autumn;
-const ALPHA = 'AA';
-
-// mean for gauss randomization of lines
-const LINE_MEAN = 0;
-// std dev for gauss randomization of lines
-const LINE_STD_DEV = 4;
-// start collatz number
-const START_N = 0;
-// end collatz number
-const END_N = 500;
-// line color alpha
-
-// probability of choosing a colored line
-const COLOR_LINE_PROB = 0.2;
-// coefficient to pass to noise() for x and y coords
-const LINE_NOISE_RATIO = 0.2;
-// change in x values when creating background texture
-const BG_DELTA_X = 10;
-// change in y values when creating background texture
-const BG_DELTA_Y = 10;
-// variance when choosing background coords
-const BG_VAR = 5;
-// background starting color
-const BG_BASE_COLOR = 100;
-// gaussian mean for background color adjustment percentage (0 - 1.0)
-const BG_MEAN = 0.7;
-// gaussian std dev for background color adjustment percentage (0 - 1.0)
-const BG_STD_DEV = 0.2;
-// start y value for adding fill squares
-const SQUARES_START_Y = 25;
-// change in y value for adding fill squares
-const SQUARES_DELTA_Y = 25;
-// change in x value for adding fill squares
-const SQUARES_DELTA_X = 25;
-// variance when choosing coords for fill squares
-const SQUARES_VAR = 12;
-const MAX_SQUARE_SIDE = 100;
-const IGNORE_DIAG_LENGTH = 10;
-const IGNORE_DIAG_LOWER_SLOPE = 0.05;
-const IGNORE_DIAG_UPPER_SLOPE = 10;
-
 let minBgVals = null;
 let maxBgVals = null;
 // calculated below, need to wait until setup is called
 let PIXEL_DENSITY = null;
+let pixels = null;
+let width = 0;
+let height = 0;
 
 document.addEventListener("DOMContentLoaded", async function() {
     //PIXEL_DENSITY = pixelDensity();
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const app = new PIXI.Application({width, height, antialias: true});
-    window.app = app;
-    app.renderer.preserveDrawingBuffer = true;
-    document.body.appendChild(app.view);
-    app.renderer.backgroundColor = getColorInt(COLORSCHEME.background1);
+    const manager = new AppManager();
+    width = manager.width;
+    height = manager.height;
+    manager.app.renderer.backgroundColor = getColorInt(COLORSCHEME.background1);
 
     let bg1Vals = hexStringToInts(COLORSCHEME.background1);
     let bg2Vals = hexStringToInts(COLORSCHEME.background2);
     minBgVals = bg1Vals.map((v, i) => Math.min(v, bg2Vals[i]));
     maxBgVals = bg1Vals.map((v, i) => Math.max(v, bg2Vals[i]));
 
-    let count = 0;
-    let graphics = new PIXI.Graphics();
     for (let y = BG_DELTA_Y; y < height; y += BG_DELTA_Y) {
         for (let x = BG_DELTA_X; x < width; x += BG_DELTA_X) {
             let dotColor = colorGradientGaussian(COLORSCHEME.background1, COLORSCHEME.background2, BG_MEAN, BG_STD_DEV);
-            graphics.beginFill(getColorInt(dotColor));
-            graphics.drawRect(x + equiRandom(BG_VAR), y + equiRandom(BG_VAR), 1, 1);
-            if (count % 10000 === 0) {
-                app.stage.addChild(graphics);
-                graphics = new PIXI.Graphics();
-            }
-            count++;
+            manager.exec(g => {
+                g.beginFill(getColorInt(dotColor));
+                g.drawRect(x + equiRandom(BG_VAR), y + equiRandom(BG_VAR), 1, 1);
+            });
         }
     }
-    app.stage.addChild(graphics);
+    manager.append();
+    draw(manager, width, height);
     //noLoop();
 });
-function draw() {
+function draw(manager, width, height) {
     for (let res of doCollatz()) {
         if (random() < res.prevY / height) {
-            stroke(random(COLORSCHEME.colors) + ALPHA);
-            line(res.prevX, res.prevY, res.nextX, res.nextY);
+            manager.graphics.lineStyle(THICKNESS, getColorInt(random(COLORSCHEME.colors)));
+            //stroke(random(COLORSCHEME.colors) + ALPHA);
+            manager.exec(g => {
+                g.moveTo(res.prevX, res.prevY);
+                g.lineTo(res.nextX, res.nextY);
+            });
+            //line(res.prevX, res.prevY, res.nextX, res.nextY);
         }
         else {
-            stroke(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2, noise(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO)));
+            //stroke(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2, noise(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO)));
+            debugger;
+            manager.graphics.lineStyle(THICKNESS, 
+                getColorInt(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2,
+                    perlin(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO, NOISE_OCTAVES, NOISE_FALLOFF))));
             let gx = lineGauss();
             let gy = lineGauss();
-            line(res.prevX + gx, res.prevY + gy, res.nextX + gx, res.nextY + gy);
+            manager.exec(g => {
+                g.moveTo(res.prevX + gx, res.prevY + gy);
+                g.lineTo(res.nextX + gx, res.nextY + gy);
+            })
+            //line(res.prevX + gx, res.prevY + gy, res.nextX + gx, res.nextY + gy);
         }
         
     }
     for (let res of doCollatz()) {
         if (random() < COLOR_LINE_PROB) {
-            stroke(random(COLORSCHEME.colors) + ALPHA);
-            line(2 * height - res.prevX, height - res.prevY, 2 * height - res.nextX, height - res.nextY);
+            manager.graphics.lineStyle(THICKNESS, getColorInt(random(COLORSCHEME.colors)));
+            //stroke(random(COLORSCHEME.colors) + ALPHA);
+            manager.exec(g => {
+                g.moveTo(2 * height - res.prevX, height - res.prevY);
+                g.lineTo(2 * height - res.nextX, height - res.nextY);
+            })
+            //line(2 * height - res.prevX, height - res.prevY, 2 * height - res.nextX, height - res.nextY);
         }
         
     }
     
-    loadPixels();
-    noStroke();
+    //loadPixels();
+    //noStroke();
+    pixels = manager.app.renderer.plugins.extract.pixels()
     for (let y = SQUARES_START_Y; y < height; y += SQUARES_DELTA_Y) {
         for (let x = y * 2 + SQUARES_VAR; x < width; x += SQUARES_DELTA_X) {
-            let adjX = x + round(equiRandom(SQUARES_VAR));
-            let adjY = y + round(equiRandom(SQUARES_VAR));
+            let adjX = x + Math.round(equiRandom(SQUARES_VAR));
+            let adjY = y + Math.round(equiRandom(SQUARES_VAR));
             if (checkPixelColor(adjX, adjY)) {
                 let points = scanlineSeedFilling(adjX, adjY, isBackground);
                 let res = grahamScan(points);
@@ -220,10 +193,10 @@ function drawFill(res) {
     loadPixels();
 }
 
-const isBackground = (x, y) => x < width && y < height && getPixel(x, y, PIXEL_DENSITY).every((d, i) => d >= minBgVals[i] && d <= maxBgVals[i]);
+const isBackground = (x, y) => x < width && y < height && getPixel(pixels, x, y, PIXEL_DENSITY).every((d, i) => d >= minBgVals[i] && d <= maxBgVals[i]);
 
 function lineGauss() {
-    return round(randomGaussian(LINE_MEAN, LINE_STD_DEV));
+    return Math.round(randomGaussian(LINE_MEAN, LINE_STD_DEV));
 }
 
 function* genCollatz(n) {
