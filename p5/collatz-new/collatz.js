@@ -8,12 +8,14 @@ let PIXEL_DENSITY = null;
 let pixels = null;
 let width = 0;
 let height = 0;
+let bufferWidth = 0;
 
 document.addEventListener("DOMContentLoaded", async function() {
-    //PIXEL_DENSITY = pixelDensity();
+    PIXEL_DENSITY = 1 / window.devicePixelRatio;
     const manager = new AppManager();
     width = manager.width;
     height = manager.height;
+    console.log(height);
     manager.app.renderer.backgroundColor = getColorInt(COLORSCHEME.background1);
 
     let bg1Vals = hexStringToInts(COLORSCHEME.background1);
@@ -32,22 +34,18 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
     manager.append();
     draw(manager, width, height);
-    //noLoop();
 });
 function draw(manager, width, height) {
     for (let res of doCollatz()) {
         if (random() < res.prevY / height) {
             manager.graphics.lineStyle(THICKNESS, getColorInt(random(COLORSCHEME.colors)));
-            //stroke(random(COLORSCHEME.colors) + ALPHA);
+
             manager.exec(g => {
                 g.moveTo(res.prevX, res.prevY);
                 g.lineTo(res.nextX, res.nextY);
             });
-            //line(res.prevX, res.prevY, res.nextX, res.nextY);
         }
         else {
-            //stroke(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2, noise(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO)));
-            debugger;
             manager.graphics.lineStyle(THICKNESS, 
                 getColorInt(colorGradient(COLORSCHEME.foreground1, COLORSCHEME.foreground2,
                     perlin(res.val * LINE_NOISE_RATIO, res.val * LINE_NOISE_RATIO, NOISE_OCTAVES, NOISE_FALLOFF))));
@@ -56,41 +54,43 @@ function draw(manager, width, height) {
             manager.exec(g => {
                 g.moveTo(res.prevX + gx, res.prevY + gy);
                 g.lineTo(res.nextX + gx, res.nextY + gy);
-            })
-            //line(res.prevX + gx, res.prevY + gy, res.nextX + gx, res.nextY + gy);
+            });
         }
         
     }
     for (let res of doCollatz()) {
         if (random() < COLOR_LINE_PROB) {
             manager.graphics.lineStyle(THICKNESS, getColorInt(random(COLORSCHEME.colors)));
-            //stroke(random(COLORSCHEME.colors) + ALPHA);
             manager.exec(g => {
                 g.moveTo(2 * height - res.prevX, height - res.prevY);
                 g.lineTo(2 * height - res.nextX, height - res.nextY);
-            })
-            //line(2 * height - res.prevX, height - res.prevY, 2 * height - res.nextX, height - res.nextY);
+            });
         }
         
     }
-    
-    //loadPixels();
-    //noStroke();
-    pixels = manager.app.renderer.plugins.extract.pixels()
-    for (let y = SQUARES_START_Y; y < height; y += SQUARES_DELTA_Y) {
-        for (let x = y * 2 + SQUARES_VAR; x < width; x += SQUARES_DELTA_X) {
-            let adjX = x + Math.round(equiRandom(SQUARES_VAR));
-            let adjY = y + Math.round(equiRandom(SQUARES_VAR));
-            if (checkPixelColor(adjX, adjY)) {
-                let points = scanlineSeedFilling(adjX, adjY, isBackground);
-                let res = grahamScan(points);
-                if (res.length > 3) {
-                    drawFill(res);
+
+    requestAnimationFrame(() => {
+        let gl = document.getElementsByTagName('canvas')[0].getContext('webgl2', {preserveDrawingBuffer: true});
+        pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
+        console.log(pixels.length);
+        gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        bufferWidth = gl.drawingBufferWidth;
+
+        for (let y = SQUARES_START_Y; y < height; y += SQUARES_DELTA_Y) {
+            for (let x = y * 2 + SQUARES_VAR; x < width; x += SQUARES_DELTA_X) {
+                let adjX = x + Math.round(equiRandom(SQUARES_VAR));
+                let adjY = y + Math.round(equiRandom(SQUARES_VAR));
+                if (checkPixelColor(adjX, adjY)) {
+                    let points = scanlineSeedFilling(adjX, adjY, isBackground);
+                    let res = grahamScan(points);
+                    if (res.length > 3) {
+                        drawFill(res, manager);
+                    }
                 }
             }
-            
         }
-    }
+        manager.append();
+    });
 }
 
 function* doCollatz() {
@@ -172,8 +172,8 @@ function checkPixelColor(x, y) {
     return true;
 }
 
-function drawFill(res) {
-    fill(random(COLORSCHEME.colors) + ALPHA);
+function drawFill(res, manager) {
+    manager.graphics.beginFill(getColorInt(random(COLORSCHEME.colors)));
     for (let i = 0; i < res.length; i++) {
         let cur = res[i];
         let next = res[i === res.length - 1 ? 0 : i + 1];
@@ -185,15 +185,17 @@ function drawFill(res) {
             return;
         }
     }
-    beginShape();
+
+    let shapeArray = [];
     for (let p of res) {
-        vertex(p.x, p.y);
+        shapeArray.push(p.x);
+        shapeArray.push(height - p.y);
     }
-    endShape();
-    loadPixels();
+    manager.exec(g => g.drawPolygon(shapeArray));
+    manager.graphics.endFill();
 }
 
-const isBackground = (x, y) => x < width && y < height && getPixel(pixels, x, y, PIXEL_DENSITY).every((d, i) => d >= minBgVals[i] && d <= maxBgVals[i]);
+const isBackground = (x, y) => x < width && y < height && getPixel(pixels, x, y, bufferWidth, PIXEL_DENSITY).every((d, i) => d >= minBgVals[i] && d <= maxBgVals[i]);
 
 function lineGauss() {
     return Math.round(randomGaussian(LINE_MEAN, LINE_STD_DEV));

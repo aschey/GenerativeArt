@@ -82,8 +82,8 @@ function grahamScan(points) {
     return result;
 }
 
-function getPixel(pixels, x, y, d) {
-    let index = Math.round(4 * ((y * d) * width * d + (x * d )));
+function getPixel(pixels, x, y, width, d) {
+    let index = Math.round(4 * ((y * d) * width * d + (x * d)));
     return [pixels[index], pixels[index + 1], pixels[index + 2]];
 }
 
