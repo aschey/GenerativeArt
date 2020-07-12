@@ -1,7 +1,7 @@
 class AppManager {
-    constructor() {
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
+    constructor(width = null, height = null) {
+        this.width = width ?? window.innerWidth;
+        this.height = height ?? window.innerHeight;
         this.app = new PIXI.Application({width: this.width, height: this.height, antialias: true});
         this.graphics = new PIXI.Graphics();
         this.drawCount = 0;

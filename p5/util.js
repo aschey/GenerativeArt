@@ -256,3 +256,48 @@ function randomGaussian(mean, sigma) {
     let u = Math.random()*0.682;
     return ((u % 1e-8 > 5e-9 ? 1 : -1) * (Math.sqrt(-Math.log(Math.max(1e-9, u)))-0.618))*1.618 * sigma + mean;
 }
+
+// Function to calculate cubic bezier control points from
+// an array of points along the desired curve
+// from https://github.com/YR/catmull-rom-spline/blob/master/src/index.js
+function calcControlPoints(points) {
+    const n = points.length;
+
+    // Abort if there are not sufficient points to draw a curve
+    if (n < 3) return points;
+
+    let p0 = points[0];
+    let p1 = points[0];
+    let p2 = points[1];
+    let p3 = points[2];
+    let pts = [points[0]];
+
+    for (let i = 1; i < n; i++) {
+        pts.push([
+        ((-p0[0] + 6 * p1[0] + p2[0]) / 6),
+        ((-p0[1] + 6 * p1[1] + p2[1]) / 6),
+        ((p1[0] + 6 * p2[0] - p3[0]) / 6),
+        ((p1[1] + 6 * p2[1] - p3[1]) / 6),
+        p2[0],
+        p2[1]
+        ]);
+
+        p0 = p1;
+        p1 = p2;
+        p2 = p3;
+        p3 = points[i + 2] || p3;
+    }
+
+    return pts;
+}
+
+function drawCurve(graphics, points) {
+	if (points.length < 3) return;
+  
+	const controls = calcControlPoints(points);
+  
+  graphics.moveTo(controls[0][0], controls[0][1]);
+	controls.slice(1).forEach(
+  	p => graphics.bezierCurveTo(p[0], p[1], p[2], p[3], p[4], p[5])
+  );
+}
