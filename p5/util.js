@@ -93,7 +93,7 @@ function equiRandom(val) {
 
 // See https://en.wikipedia.org/wiki/Flood_fill
 // https://gist.github.com/arcollector/155a8c751f65c15872fb
-function scanlineSeedFilling(seedX, seedY, isBackground) {
+function floodFill(seedX, seedY, isBackground, width) {
     let points = [];
     let isCurrentBackground = (x, y) => isBackground(x, y) && !points.some(p => p.x === x && p.y === y);
 	let seedScanline = function( xLeft, xRight, y ) {
@@ -190,12 +190,10 @@ function worker(seq, workerFile, workerFunc) {
     let batchSize = Math.max(Math.ceil(numIters / maxThreads), 1);
 
     numThreads = numIters / batchSize;
-    let threads = [];
-
-    for (let iter = 0; iter < numThreads; iter++) {
+    let threads = _.range(0, numThreads).map(iter => {
         const func = Comlink.wrap(new Worker(workerFile));
-        threads.push(workerFunc(func, seq[iter * batchSize], seq[Math.min((iter + 1) * batchSize, numIters)]));
-    }
+        return workerFunc(func, seq[iter * batchSize], seq[Math.min((iter + 1) * batchSize, numIters)]);
+    });
 
     return Promise.all(threads);
 } 

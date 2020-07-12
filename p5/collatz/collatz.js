@@ -98,7 +98,7 @@ function draw() {
             let adjX = x + round(equiRandom(SQUARES_VAR));
             let adjY = y + round(equiRandom(SQUARES_VAR));
             if (checkPixelColor(adjX, adjY)) {
-                let points = scanlineSeedFilling(adjX, adjY, isBackground);
+                let points = floodFill(adjX, adjY, isBackground);
                 let res = grahamScan(points);
                 if (res.length > 3) {
                     drawFill(res);

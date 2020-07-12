@@ -11,14 +11,13 @@ document.addEventListener("DOMContentLoaded", async function() {
     app.renderer.backgroundColor = getColorInt(COLORSCHEME.background1);
 
     drawBackground(manager, width, height);
+    endPerfTimer();
+    startPerfTimer();
     let res = await worker(_.range(START_Y, height + START_Y, START_Y), 'trees.worker.js', (drawTrees, startY, endY) =>  
         drawTrees(START_X, width, startY, endY));
     
-
-    //let graphics = new PIXI.Graphics();
     for (let group of res) {
         for (let tree of group) {
-
             manager.graphics.lineStyle(THICKNESS, getColorInt(random(COLORSCHEME.colors)));
             for (let treeLine of tree) {
                 manager.exec(g => {

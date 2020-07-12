@@ -9,14 +9,9 @@ importScripts(
 
 function drawTrees(startX, width, startY, endY) {
     //let res = [];
-    let res = cRange2d(startY, endY, START_Y, startX, width, START_X).map(pair => drawTree(pair.x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), pair.y + random(PLACE_VAR_MIN, PLACE_VAR_MAX)));
-    //let res = _.product(_.range(startY, endY, START_Y), _.range(startX, width, START_X)).map(pair => drawTree(pair[1] + random(PLACE_VAR_MIN, PLACE_VAR_MAX), pair[0] + random(PLACE_VAR_MIN, PLACE_VAR_MAX)))
-    // for (let y = startY; y < endY; y += START_Y) {
-    //     for (let x = START_X; x < width; x += START_X) {
-    //         res.push(drawTree(x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), y + random(PLACE_VAR_MIN, PLACE_VAR_MAX)));
-    //     }
-    // }
-    // return res;
+    let res = cRange2d(startY, endY, START_Y, startX, width, START_X)
+        .map(pair => drawTree(pair.x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), pair.y + random(PLACE_VAR_MIN, PLACE_VAR_MAX)));
+    
     return res;
 }
 

@@ -1,6 +1,3 @@
-/// <reference path="../node_modules/@types/p5/global.d.ts" />
-/// <reference path="../util.js" />
-
 let minBgVals = null;
 let maxBgVals = null;
 let pixels = null;
@@ -19,19 +16,18 @@ document.addEventListener("DOMContentLoaded", async function() {
     minBgVals = bg1Vals.map((v, i) => Math.min(v, bg2Vals[i]));
     maxBgVals = bg1Vals.map((v, i) => Math.max(v, bg2Vals[i]));
 
-    for (let y = BG_DELTA_Y; y < height; y += BG_DELTA_Y) {
-        for (let x = BG_DELTA_X; x < width; x += BG_DELTA_X) {
-            let dotColor = colorGradientGaussian(COLORSCHEME.background1, COLORSCHEME.background2, BG_MEAN, BG_STD_DEV);
+    cRange2d(BG_DELTA_Y, height, BG_DELTA_Y, BG_DELTA_X, width, BG_DELTA_X).map(pair => {
+        let dotColor = colorGradientGaussian(COLORSCHEME.background1, COLORSCHEME.background2, BG_MEAN, BG_STD_DEV);
             manager.exec(g => {
                 g.beginFill(getColorInt(dotColor));
-                g.drawRect(x + equiRandom(BG_VAR), y + equiRandom(BG_VAR), 1, 1);
+                g.drawRect(pair.x + equiRandom(BG_VAR), pair.y + equiRandom(BG_VAR), 1, 1);
             });
-        }
-    }
+    });
+    
     manager.append();
-    draw(manager, width, height);
+    await draw(manager, width, height);
 });
-function draw(manager, width, height) {
+async function draw(manager, width, height) {
     for (let res of doCollatz()) {
         if (random() < res.prevY / height) {
             manager.graphics.lineStyle(THICKNESS, getColorInt(random(COLORSCHEME.colors)));
@@ -64,30 +60,26 @@ function draw(manager, width, height) {
         }
         
     }
+    setTimeout(() => {
+        startPerfTimer();
+        requestAnimationFrame(async () => {
+            let gl = document.getElementsByTagName('canvas')[0].getContext('webgl2', {preserveDrawingBuffer: true});
+            gl.finish();
+            pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
+            gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            bufferWidth = gl.drawingBufferWidth;
 
-    requestAnimationFrame(() => {
-        let gl = document.getElementsByTagName('canvas')[0].getContext('webgl2', {preserveDrawingBuffer: true});
-        pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
-        gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-        bufferWidth = gl.drawingBufferWidth;
-
-        for (let y = SQUARES_START_Y; y < height; y += SQUARES_DELTA_Y) {
-            for (let x = y * 2 + SQUARES_VAR; x < width; x += SQUARES_DELTA_X) {
-                let adjX = x + Math.round(equiRandom(SQUARES_VAR));
-                let adjY = y + Math.round(equiRandom(SQUARES_VAR));
-                if (checkPixelColor(adjX, adjY)) {
-                    let points = scanlineSeedFilling(adjX, adjY, isBackground);
-                    let res = grahamScan(points);
-                    if (res.length > 3) {
-                        drawFill(res, manager);
-                        //x += Math.round(random(1, 10));
-                        //y += Math.round(random(1, 10));
-                    }
-                }
+            let squareResult = await worker(_.range(SQUARES_START_Y, height, SQUARES_DELTA_Y), 'collatz.worker.js', (getSquares, startY, endY) =>  
+                getSquares(startY, endY, width, height, bufferWidth, minBgVals, maxBgVals, pixels, SQUARES_DELTA_X, SQUARES_DELTA_Y, MAX_SQUARE_SIDE));
+            let squares = _.flatten(squareResult);
+            for (let square of squares) {
+                drawFill(square, manager);
+                
             }
-        }
-        manager.append();
-    });
+            manager.append();
+            endPerfTimer();
+        });
+    }, 1);
 }
 
 function* doCollatz() {
@@ -115,60 +107,6 @@ function* doCollatz() {
     }
 }
 
-function checkPixelColor(x, y) {
-    let origX = x;
-    let origY = y;
-    if (!isBackground(x, y)) {
-        return false;
-    }
-    for (; isBackground(x, y); x--);
-    if (x === 0 || origX - x > 100) {
-        return false;
-    }
-    x++;
-
-    for (; isBackground(x, y); y--);
-    if (y === 0 || origY - y > 100) {
-        return false;
-    }
-    y++;
-
-    let minX = x;
-    let minY = y;
-
-    for (; isBackground(x, y); x++);
-    if (x === width || x - minX > MAX_SQUARE_SIDE) {
-        return false;
-    }
-    x--;
-
-    for (; isBackground(x, y); y++);
-    if (y === height || y - minY > MAX_SQUARE_SIDE) {
-        return false;
-    }
-    y--;
-
-    let maxX = x;
-    let maxY = y;
-    x = minX;
-    y = minY;
-    for (; y < height && isBackground(x, y); y++);
-    
-    if (x === width || x - minX > MAX_SQUARE_SIDE) {
-        return false;
-    }
-    y--;
-
-    for (; x < width && isBackground(x, y); x++);
-    x--;
-    
-    if (Math.abs(x - maxX) > 0 || Math.abs(y - maxY > 0)) {
-        return false;
-    }
-
-    return true;
-}
-
 function drawFill(res, manager) {
     manager.graphics.beginFill(getColorInt(random(COLORSCHEME.colors)), getColorInt(ALPHA) / getColorInt('FF'));
     for (let i = 0; i < res.length; i++) {
@@ -191,8 +129,6 @@ function drawFill(res, manager) {
     manager.exec(g => g.drawPolygon(shapeArray));
     manager.graphics.endFill();
 }
-
-const isBackground = (x, y) => x < width && y < height && getPixel(pixels, x, y, bufferWidth).every((d, i) => d >= minBgVals[i] && d <= maxBgVals[i]);
 
 function lineGauss() {
     return Math.round(randomGaussian(LINE_MEAN, LINE_STD_DEV));
