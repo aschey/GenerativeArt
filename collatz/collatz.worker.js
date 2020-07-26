@@ -2,7 +2,7 @@ importScripts(
     "../../../node_modules/comlink/dist/umd/comlink.js", 
     "../../../node_modules/lodash/lodash.js", 
     "../../../node_modules/lodash.product/lodash.product.js", 
-    '../perlin.js',
+    '../thirdParty/perlin.js',
     '../colors.js', 
     '../util.js', 
     'consts.js');

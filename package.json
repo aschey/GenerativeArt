@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@types/node": "^13.1.8",
+    "comlink": "^4.2.0",
+    "lodash": "^4.17.15",
+    "lodash.product": "^18.9.19"
+  }
+}

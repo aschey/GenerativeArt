@@ -1,3 +1,5 @@
+// Lightly modified from https://github.com/generative-light/p5.scribble.js/ to work with pixi.js
+
 /*
 This file contains functions for drawing 2d primitives with a handy sketchy look in p5.js.
 
