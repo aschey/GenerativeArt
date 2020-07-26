@@ -1,9 +1,8 @@
 {
   "dependencies": {
     "@types/node": "^13.1.8",
-    "@types/p5": "^0.9.0",
+    "comlink": "^4.2.0",
     "lodash": "^4.17.15",
-    "mathjs": "^6.6.0",
-    "p5": "^0.10.2"
+    "lodash.product": "^18.9.19"
   }
 }

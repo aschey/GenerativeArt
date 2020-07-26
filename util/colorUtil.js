@@ -79,7 +79,13 @@ const darken = (color, percent) => pSBC(-1 * percent, color);
 
 const colorGradient = (startColor, endColor, percent, linearBlending = false) => pSBC(percent, startColor, endColor, linearBlending);
 
-const getColorInt = (hexColorString, pos) => parseInt(hexColorString.substr(pos * 2, 2), 16);
+const getColorInt = (hexColorString, pos) => {
+    const offset = hexColorString.indexOf('#') === 0 ? 1 : 0;
+    if (pos === undefined) {
+        return parseInt(hexColorString.substr(offset, hexColorString.length - 1), 16);
+    }
+    return parseInt(hexColorString.substr(pos * 2 + offset, 2), 16);
+}
 
 function hexStringToInts(hexColorString) {
     // Remove leading #

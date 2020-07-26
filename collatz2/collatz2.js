@@ -1,116 +1,55 @@
-/// <reference path="../node_modules/@types/p5/global.d.ts" />
-
-const START_N = 1;
-const END_N = 1000;
-const SPACING = 0.3;
-const DELTA = 5;
 const scribble = new Scribble();
-const BASE_H = 15;
-const BASE_S = 10;
-const BASE_B = 100;
 
-function setup() {
-    let density = 30000;
-    createCanvas(max(windowWidth, 6000 * SPACING), windowHeight);
-    background(200);
-    //frameRate(5);
-    //colorMode(HSB, 100);
-    // background(BASE_H, BASE_S, BASE_B)
-    // for(let i = 0; i < density; i++) {
-    //     stroke(
-    //       BASE_H,
-    //       BASE_S - Math.random() * 5,
-    //       BASE_B - Math.random() * 8,
-    //       Math.random() * 10 + 75
-    //     );
-    
-    //     let x1 = Math.random() * width;
-    //     let y1 = Math.random() * height;
-    //     let theta = Math.random() * 2 * Math.PI;
-    //     let segmentLength = Math.random() * 5 + 2;
-    //     let x2 = Math.cos(theta) * segmentLength + x1;
-    //     let y2 = Math.sin(theta) * segmentLength + y1;
-    
-    //     line(x1, y1, x2, y2);
-    //   }
-    colorMode(RGB);
-    angleMode(DEGREES);
-    noLoop();
-}
+document.addEventListener("DOMContentLoaded", async function() {
+    const manager = new AppManager(Math.max(window.innerWidth, 6000 * SPACING));
+    //const manager = new AppManager(1000, 2000);
+    const app = manager.app;
+    const width = manager.width;
+    const height = manager.height;
 
-async function draw() {
-    translate(width / 2, height / 2);
-    let startX = 0;
-    let startY = 0;
-    //let fr = r => r;
-    //let ftheta = theta => 360/theta;
-    //let fr = r => acos(r);
-    //let ftheta = theta => cos(theta);
-    //let fr = r => tan(r);
-    //let ftheta = theta => theta;
-    //let fr = r => sin(r)*asin(r);
-    //let ftheta = theta => theta;
-    //let fr = r => r;
-    //let ftheta = theta => asin(theta);
+    app.renderer.backgroundColor = getColorInt(BACKGROUND);
+    await draw(manager, width, height);
+});
+
+async function draw(manager, width, height) {
     let delta = width / 3;
-    drawShape(r => acos(r), theta => cos(theta), 0, -delta);
-    drawShape(r => r, theta => asin(theta), 0, 0);
-    drawShape(r => sin(r)*asin(r), theta => theta, 0, delta);
+    drawShape(manager, width, height, r => Math.acos(r) * PIXI.RAD_TO_DEG, theta => Math.cos(PIXI.DEG_TO_RAD * theta), 0, -delta);
+    drawShape(manager, width, height, r => r, theta => Math.asin(theta) * PIXI.RAD_TO_DEG, 0, 0);
+    drawShape(manager, width, height, r => Math.sin(PIXI.DEG_TO_RAD * r)*Math.asin(r) * PIXI.RAD_TO_DEG, theta => theta, 0, delta);
+    manager.append();
 }
 
-function drawShape(fr, ftheta, startX, startY) {
+function drawShape(manager, width, height, fr, ftheta, startX, startY) {
     for (let res of doCollatz(fr, ftheta)) {
         let xDelta = 0;
         let yDelta = 0;
-        stroke(randomGaussian(50, 10));
+        manager.graphics.lineStyle(1, getColorInt(colorGradientGaussian(FOREGROUND1, FOREGROUND2, BG_MEAN, BG_STD_DEV)));
         if (res.prevX === res.nextX) {
             if (res.prevY < res.nextY) {
-                //stroke(50);
                 xDelta = -SPACING/4;
             }
             else {
-                //stroke(100);
                 xDelta = SPACING/4;
             }
         }
         else {
             if (res.prevX < res.nextX) {
-                //stroke(50);
                 yDelta = -SPACING/4;
             }
             else {
-                //stroke(100);
                 yDelta = SPACING/4;
             }
         }
-        // if (res.prevX === res.nextX) {
-        //     continue;
-        // }
         let noiseC = 4;
-        // if (res.prevX > height) {
-        //     res.prevX = randomGaussian(height + 125, 10);
-        // }
-        // if (res.nextX > height) {
-        //     res.nextX = randomGaussian(height + 125, 10);
-        // }
-        scribble.scribbleLine(
-            res.prevY * SPACING + DELTA + yDelta + startY + noiseC, //* noise(res.prevX, res.prevY), 
-            res.prevX * SPACING + DELTA + xDelta + startX + noiseC, //* noise(res.prevX, res.prevY), 
-            res.nextY * SPACING + DELTA + yDelta + startY + noiseC, //* noise(res.nextX, res.nextY),
-            res.nextX * SPACING + DELTA + xDelta + startX + noiseC //* noise(res.nextX, res.nextY), 
-            );
-        //square(res.prevX * SPACING + DELTA - SPACING/4, res.prevY * SPACING + DELTA - SPACING/4, SPACING/2);
-        //square(res.nextX * SPACING + DELTA - SPACING/4, res.nextY * SPACING + DELTA - SPACING/4, SPACING/2);
-        //await sleep(100);
-        if (res.current === 1) {
-            
-            //clear();
-            //startX += 50;
-            // if (startX >= width) {
-            //     startX = 0;
-            //     startY += 50;
-            // }
-        }
+
+        manager.exec(g => {
+            scribble.scribbleLine(g,
+                res.prevY * SPACING + DELTA + yDelta + startY + noiseC + width / 2, 
+                res.prevX * SPACING + DELTA + xDelta + startX + noiseC + height / 2,
+                res.nextY * SPACING + DELTA + yDelta + startY + noiseC + width / 2,
+                res.nextX * SPACING + DELTA + xDelta + startX + noiseC + height / 2
+                );
+        });
     }
 }
 function* doCollatz(fr, ftheta) {
@@ -123,18 +62,17 @@ function* doCollatz(fr, ftheta) {
             let nextR = prevR;
             let nextTheta = prevTheta;
             if (prev % 2 == 0) {
-                //nextR = (width / 2) / next; 
                 nextR = fr(next);
             }
             else {
-                nextTheta = ftheta(next);//atan(next);//cos(next * PI / 180);
+                nextTheta = ftheta(next);
             }
             
             yield {
-                prevX: prevR * cos(prevTheta), 
-                prevY: prevR * sin(prevTheta), 
-                nextX: nextR * cos(nextTheta), 
-                nextY: nextR * sin(nextTheta), val: i, current: next};
+                prevX: prevR * Math.cos(PIXI.DEG_TO_RAD * prevTheta), 
+                prevY: prevR * Math.sin(PIXI.DEG_TO_RAD * prevTheta), 
+                nextX: nextR * Math.cos(PIXI.DEG_TO_RAD * nextTheta), 
+                nextY: nextR * Math.sin(PIXI.DEG_TO_RAD * nextTheta), val: i, current: next};
 
             prevR = nextR;
             prevTheta = nextTheta;

@@ -1,9 +1,8 @@
-/// <reference path="../node_modules/@types/p5/global.d.ts" />
+let width = 0;
+let height = 0;
 
-function setup() {
-    createCanvas(windowWidth, windowHeight);
-}
-
-function draw() {
-    
+document.addEventListener("DOMContentLoaded", async function() {
+    const manager = new AppManager();
+    width = manager.width;
+    height = manager.height;
 }

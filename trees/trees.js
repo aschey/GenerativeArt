@@ -1,236 +1,51 @@
-/// <reference path="../node_modules/@types/p5/global.d.ts" />
 /// <reference path="../util.js" />
+/// <reference path="./consts.js" />
 
-const COLORSCHEME = COLORS.winterOrange;
-const ALPHA = 'FF';
-
-// Max x distance from trunk on either side
-const MAX_X = 15;
-// Branches cannot go more than n times higher than the trunk height
-const MIN_Y_FACTOR = 2;
-// Branches off the trunk can start no less than n * trunkHeight from the base of the trunk
-const MIN_Y_THRESH_FACTOR_BOTTOM = 0.1;
-// Branches off the trunk can start no more than n * trunkHeight from the base of the trunk
-const MAX_Y_THRESH_FACTOR_BOTTOM = 0.5;
-// Branches off the trunk can end no less than n * trunkHeight from the base of the trunk
-const MIN_Y_THRESH_FACTOR_TOP = 0.05;
-// Branches off the trunk can end no more than n * trunkHeight from the base of the trunk
-const MAX_Y_THRESH_FACTOR_TOP = 0.1;
-// Min percentage of the end of the branch to allow creating new branches off of
-const MIN_X_THRESH_END = 0.1;
-// Max percentage of the end of the branch to allow creating new branches off of
-const MAX_X_THRESH_END = 0.7;
-// Minimum variance from START_X or START_Y to place a new tree
-const PLACE_VAR_MIN = -20;
-// Maximum variance from START_X or START_Y to place a new tree
-const PLACE_VAR_MAX = 10;
-// Minimum trunk height
-const MIN_TRUNK_HEIGHT = 20;
-// Maximum trunk height
-const MAX_TRUNK_HEIGHT = 50;
-// Starting x coord to place trees
-const START_X = 60;
-// Starting y coord to place trees
-const START_Y = 60;
-// Minimum amount of distance allowed between branches
-const DIST_THRESH = 3;
-// Factor to multiply x value by when calculating Perlin noise
-const X_NOISE_RATIO = 0.01;
-// Factor to multiply y value by when calculating Perlin noise
-const Y_NOISE_RATIO = 0.1;
-// Number of octaves to use for Perlin noise
-const NOISE_OCTAVES = 4;
-// Factor to use for Perlin noise falloff
-const NOISE_FALLOFF = 0.2;
-// Minimum variance to multiply the noise value by when applying y variance
-const NOISE_POINT_VAR_MIN = -2;
-// Maximum variance to multiply the noise value by when applying y variance
-const NOISE_POINT_VAR_MAX = 5
-// Minimum change in x/y values when adding background textures
-const BG_DELTA_MIN = 1;
-// Maximum change in x/y values when adding background textures
-const BG_DELTA_MAX = 2;
-// Line thickness
-const THICKNESS = 2;
-// Background texture thickness
-const BG_THICKNESS = 1;
-// Max iterations before terminating generation
-const MAX_ITERS = 100000;
-// Noise threshold for choosing a bush
-const BUSH_THRESH = 0.2;
-// Min trunk height for bushes
-const BUSH_MIN_HEIGHT = 5;
-// Max trunk height for bushes
-const BUSH_MAX_HEIGHT = 10;
-const BUSH_VAR_X = 15;
-const BUSH_VAR_Y = 15;
-const BUSH_MIN_BRANCHES = 15;
-const BUSH_MAX_BRANCHES = 25;
-
-const TYPES = {
-    normal: {
-        xMean: 0,
-        xStdDev: 7,
-        yMean: -13,
-        yStdDev: 3,
-        minBranches: 10,
-        maxBranches: 25,
-        trunkPropensity: 0.1,
-        maxBranchOffCount: 10,
-        minSlopeThresh: 0.02,
-        maxSlopeThresh: 0.5, 
-        probMin: 0.0,
-        probMax: 0.5,
-        xDiffRatio: 0.5,
-        yDiffRatio: 0.5,
-        lineSelector: numLines => random(numLines - 1) 
-    },
-    skinny: {
-        xMean: 0,
-        xStdDev: 3,
-        yMean: -10,
-        yStdDev: 3,
-        minBranches: 15,
-        maxBranches: 25,
-        trunkPropensity: 0.3,
-        maxBranchOffCount: 10,
-        minSlopeThresh: 0.02,
-        maxSlopeThresh: 0.5, 
-        probMin: 0.5, 
-        probMax: 0.7,
-        xDiffRatio: 0.1,
-        yDiffRatio: 0.9,
-        lineSelector: numLines => random(numLines - 1)
-    },
-    fat: {
-        xMean: 0,
-        xStdDev: 7,
-        yMean: -3,
-        yStdDev: 2,
-        minBranches: 25,
-        maxBranches: 35,
-        trunkPropensity: 0.7,
-        maxBranchOffCount: 5,
-        minSlopeThresh: 0.01,
-        maxSlopeThresh: 0.01, 
-        probMin: 0.7, 
-        probMax: 1.0,
-        xDiffRatio: 1,
-        yDiffRatio: 0.1,
-        lineSelector: numLines => limitedGaussian(numLines * 0.25, numLines * 0.25, 0, numLines - 1)
-    }
-}
-
-function setup() {
-    createCanvas(windowWidth, windowHeight);
-
-    background(COLORSCHEME.background1);
-    noLoop();
-}
-
-function draw() {
-    drawBackground();
-    strokeWeight(THICKNESS);
-    for (let y = START_Y; y < height; y += START_Y) {
-        for (let x = START_X; x < width; x += START_X) {
-            drawTree(x + random(PLACE_VAR_MIN, PLACE_VAR_MAX), y + random(PLACE_VAR_MIN, PLACE_VAR_MAX), random(COLORSCHEME.colors));
-        }
-    }
-}
-
-function drawBackground() {
-    strokeWeight(BG_THICKNESS);
-    noiseDetail(NOISE_OCTAVES, NOISE_FALLOFF);
-    for (let y = 0; y < height; y += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
-        for (let x = 0; x < width; x += random(BG_DELTA_MIN, BG_DELTA_MAX)) {
-            let noiseVal = noise(x * X_NOISE_RATIO, y * Y_NOISE_RATIO);
-            let val = colorGradient(COLORSCHEME.background1, COLORSCHEME.background2, noiseVal);
-            stroke(val + ALPHA);
-            point(x, y + random(noiseVal * NOISE_POINT_VAR_MIN, noiseVal * NOISE_POINT_VAR_MAX));
-        }
-    }
-}
-
-function drawTree(x, y, color) {
-    stroke(color + ALPHA);
-    let iters = 0;
-    typeProb = random();
+document.addEventListener("DOMContentLoaded", async function() {
+    startPerfTimer();
+    const manager = new AppManager();
+    const app = manager.app;
+    const width = manager.width;
+    const height = manager.height;
     
-    let type = TYPES[Object.keys(TYPES).filter(t => TYPES[t].probMin <= typeProb && TYPES[t].probMax > typeProb)[0]];
-    let isBush = noise(x * X_NOISE_RATIO, y * Y_NOISE_RATIO) < BUSH_THRESH;
-    let trunkHeight = random(isBush ? BUSH_MIN_HEIGHT : MIN_TRUNK_HEIGHT, isBush ? BUSH_MAX_HEIGHT : MAX_TRUNK_HEIGHT);
-    // draw trunk
-    line(x, y, x, y - trunkHeight);
-    let trunk = {x1: x, y1: y, x2: x, y2: y - trunkHeight, branchCount: 0, level: 0};
-    let lines = [trunk];
-    numBranches = isBush ? random(BUSH_MIN_BRANCHES, BUSH_MAX_BRANCHES) : random(type.minBranches, type.maxBranches);
-    let yThreshFactorBottom = random(MIN_Y_THRESH_FACTOR_BOTTOM, MAX_Y_THRESH_FACTOR_BOTTOM);
-    let yThreshFactorTop = random(MIN_Y_THRESH_FACTOR_TOP, MAX_Y_THRESH_FACTOR_TOP);
-    let xThreshEnd = random(MIN_X_THRESH_END, MAX_X_THRESH_END);
-    let slopeThresh = random(type.minSlopeThresh, type.maxSlopeThresh);
+    app.renderer.backgroundColor = getColorInt(COLORSCHEME.background1);
 
-    while (lines.length < numBranches && iters < MAX_ITERS) {
-        iters++;
-        let availLines = lines.filter(l => l.branchCount < type.maxBranchOffCount && l.level < 3).sort(l => l.y);
-        let curLine = isBush || random() < type.trunkPropensity ? trunk : availLines[round(type.lineSelector(availLines.length))];
-        // get a point on the line y = mx + b
-        let slope = getSlope(curLine.x1, curLine.y1, curLine.x2, curLine.y2);
-        let intercept = curLine.y1 - (slope * curLine.x1);
-        let x1a = curLine.x1 + (xThreshEnd * (curLine.x2 - curLine.x1));
-        let x1b = curLine.x2 - (xThreshEnd * (curLine.x2 - curLine.x1));
-        let x1Max = min(max(x1a, x1b), trunk.x1 + MAX_X);
-        let x1Min = max(min(x1a, x1b), trunk.x1 - MAX_X);
-        let x1Diff = x1Max - x1Min;
-        let x1 = limitedGaussian(x1Min + (x1Diff * type.xDiffRatio), x1Diff, x1Min, x1Max);
-        let y1a = curLine.y1 - (yThreshFactorBottom * (curLine.y1 - curLine.y2));
-        let y1b = curLine.y2 + (yThreshFactorTop * (curLine.y1 - curLine.y2));
-        let y1Max = max(y1a, y1b);
-        let y1Min = min(y1a, y1b);
-        let y1Diff = y1Max - y1Min;
-        let y1 = (Math.abs(slope) === Infinity) 
-            ? limitedGaussian(y1Min + (y1Diff * type.yDiffRatio), y1Diff, y1Min, y1Max)
-            : slope * x1 + intercept;
-        let x2 = isBush ? x1 + equiRandom(BUSH_VAR_X) : x1 + randomGaussian(type.xMean, type.xStdDev);
-        let y2 = isBush ? y1 + random(-BUSH_VAR_Y * (lines.length / numBranches), 0) : y1 + randomGaussian(type.yMean, type.yStdDev);
-        y2 = max(y2, trunk.y1 - (trunkHeight * MIN_Y_FACTOR));
-        let maxDistance = min([
-            8 * (3 - curLine.level), 
-            trunkHeight - distance(trunk.x1, trunk.y1, trunk.x2, y1), 
-            distance(curLine.x1, curLine.y1, curLine.x2, curLine.y2)
-        ]);
-        if (!isBush && distance(x1, y1, x2, y2) > maxDistance) {
-            let r =  maxDistance / distance(x1, y1, x2, y2) * random();
-            let newX = x1 + ((x2 - x1) * r);
-            let oldSlope = getSlope(x1, y1, x2, y2);
-            let oldIntercept = y1 - (oldSlope * x1);
-            y2 = oldSlope * newX + oldIntercept;
-            x2 = newX;
-        }
-        
-        tooSimilar = false;
-        if (!isBush) {
-            let curSlope = getSlope(x1, y1, x2, y2);
-            for (prevLine of lines) {
-                prevSlope = getSlope(prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2);
-                // Don't allow any lines to intersect, any two slopes to be too similar, or any two end points to be too close
-                if (Math.abs(curSlope === Infinity) ||
-                    intersects(x1, y1, x2, y2, prevLine.x1, prevLine.y1, prevLine.x2, prevLine.y2) || 
-                    prevSlope - slopeThresh <= curSlope && curSlope <= prevSlope + slopeThresh ||
-                    distance(x2, y2, prevLine.x2, prevLine.y2) < DIST_THRESH
-                    ) {
-                    tooSimilar = true;
-                    break;
-                }
-            };
-            if (tooSimilar) {
-                continue;
+    drawBackground(manager, width, height);
+    endPerfTimer();
+    startPerfTimer();
+    let res = await worker(_.range(START_Y, height + START_Y, START_Y), 'trees.worker.js', (drawTrees, startY, endY) =>  
+        drawTrees(START_X, width, startY, endY));
+    
+    for (let group of res) {
+        for (let tree of group) {
+            manager.graphics.lineStyle(THICKNESS, getColorInt(random(COLORSCHEME.colors)));
+            for (let treeLine of tree) {
+                manager.exec(g => {
+                    g.moveTo(treeLine.x1, treeLine.y1);
+                    g.lineTo(treeLine.x2, treeLine.y2);
+                });
             }
+            
         }
-        
-        line(x1, y1, x2, y2);
-        lines.push({x1, y1, x2, y2, branchCount: 0, level: curLine.level + 1});
-        curLine.branchCount++;
     }
-}
+    manager.append();
+    endPerfTimer();
+});
 
+function drawBackground(manager, width, height) {
+    cRange2d(0, height, 1, 0, width, 1).map(pair => {
+        pair.x += random(BG_DELTA_MIN - 1, BG_DELTA_MAX - 1);
+        pair.y += random(BG_DELTA_MIN - 1, BG_DELTA_MAX - 1);
+        
+        let noiseVal = perlin2(pair.x * X_NOISE_RATIO, pair.y * Y_NOISE_RATIO, 1, NOISE_FALLOFF);
+
+        let val = colorGradient(COLORSCHEME.background1, COLORSCHEME.background2, noiseVal);
+        manager.exec(g => {
+            g.beginFill(getColorInt(val));
+            g.drawRect(pair.x, pair.y + random(noiseVal * NOISE_POINT_VAR_MIN, noiseVal * NOISE_POINT_VAR_MAX), 1, 1);
+            g.endFill();
+        });
+    });
+    manager.append();
+}
 
