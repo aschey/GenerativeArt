@@ -1,5 +1,3 @@
-/// <reference path="../node_modules/@types/p5/global.d.ts" />
-
 let leftX;
 let rightX;
 let topY;
