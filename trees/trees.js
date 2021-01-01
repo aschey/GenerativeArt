@@ -1,9 +1,9 @@
-/// <reference path="../util.js" />
+/// <reference path="../util/util.js" />
 /// <reference path="./consts.js" />
 
 document.addEventListener('DOMContentLoaded', async function () {
   startPerfTimer();
-  const manager = new AppManager(800, 2000);
+  const manager = new AppManager();
   const app = manager.app;
   const width = manager.width;
   const height = manager.height;

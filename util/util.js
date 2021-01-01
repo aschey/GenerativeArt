@@ -179,7 +179,7 @@ function limitedGaussian(mean, stdDev, lowerBound, upperBound) {
 const maxYVal = (x1, x2, y1, distance) => Math.sqrt(Math.abs(Math.pow(distance, 2) - Math.pow(x2 - x1, 2))) + y1;
 const maxXVal = (x1, y1, y2, distance) => Math.sqrt(Math.abs(Math.pow(distance, 2) - Math.pow(y2 - y1, 2))) + x1;
 
-const polarToCartesian = (r, theta) => ({ x: r * cos(theta), y: r * sin(theta)});
+const polarToCartesian = (r, theta) => ({ x: r * Math.cos(theta), y: r * Math.sin(theta)});
 
 const range2d = (start1, end1, step1, start2, end2, step2, label1, label2) => (_.product(_.range(start1, end1, step1), _.range(start2, end2, step2)).map(pair => ({[label1]: pair[0], [label2]: pair[1]})));
 const cRange2d = (start1, end1, step1, start2, end2, step2) => range2d(start1, end1, step1, start2, end2, step2, 'y', 'x');
@@ -300,4 +300,8 @@ function drawCurve(graphics, points) {
 	controls.slice(1).forEach(
   	p => graphics.bezierCurveTo(p[0], p[1], p[2], p[3], p[4], p[5])
   );
+}
+
+function angleBetweenPoints(x1, y1, x2, y2) {
+    return Math.atan2(y2 - y1, x2 - x1);
 }
