@@ -3,8 +3,8 @@ importScripts(
     "../../../node_modules/lodash/lodash.js", 
     "../../../node_modules/lodash.product/lodash.product.js", 
     '../thirdParty/perlin.js',
-    '../colors.js', 
-    '../util.js', 
+    '../util/colors.js', 
+    '../util/util.js', 
     'consts.js');
 
 function getSquares(startY, endY, width, height, bufferWidth, minBgVals, maxBgVals, pixels, squaresDeltaX, squaresDeltaY, maxSquareSide) {
