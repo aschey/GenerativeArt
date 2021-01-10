@@ -89,8 +89,6 @@ void main() {
     vec2 st = gl_FragCoord.xy/u_resolution.xy;
     float x_mult = u_resolution.x/u_resolution.y;
     st.x *= x_mult;
-    vec2 st2 = st;
-    float rad = length(0.5-st2);
    
     st.x = 0.64 * x_mult - st.x;
     st.y = 0.6 - st.y;
@@ -120,7 +118,7 @@ void main() {
     
     float n = abs(noise(swirl(st)));
     color += vec3(n*3., -n, -n*3.) * (1.-smoothstep(0., 1., rad2));
-	color *= (0.*f*f*f + 1.2*f*f + 0.6*f);
+	color *= (0.3*f*f*f + 1.2*f*f + 0.6*f);
     
     gl_FragColor = vec4(color,1.);
 }
