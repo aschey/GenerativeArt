@@ -11,16 +11,16 @@
       window.onload = function () {
         const canvas = document.getElementById('canvas');
         const wrapper = document.getElementById('wrapper');
-        canvas.width = window.innerHeight * 1;
-        const height = (288 / 512) * window.innerHeight * 1;
-        canvas.height = height;
+        const height = window.innerHeight * 1;
+        canvas.width = height;
+        canvas.height = (3 / 5) * height;
         //wrapper.style.transform = `rotate(90deg) translateX(${height}px)`;
       };
     </script>
   </head>
 
   <body>
-    <div id="wrapper" style="transform: rotate(90deg) translateX(1000px)">
+    <div id="wrapper"style="transform: rotate(90deg) translateX(1000px)" >
       <canvas id="canvas" class="glslCanvas" data-fragment-url="jupiter.frag"></canvas>
     </div>
   </body>

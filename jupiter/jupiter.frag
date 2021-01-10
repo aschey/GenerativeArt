@@ -33,10 +33,10 @@ float noise (in vec2 _st) {
     float d = random(i + vec2(1.0, 1.0));
 
     //vec2 u = f * f * (3.0 - 2.0 * f);
-    vec2 u = f*f*f*(f*(f*6.-15.)+10.);
+    vec2 u = f * f * f * (f * (f * 6. - 15.) + 10.);
 
     return mix(a, b, u.x) +
-            (c - a)* u.y * (1.0 - u.x) +
+            (c - a) * u.y * (1.0 - u.x) +
             (d - b) * u.x * u.y ;
 }
 
@@ -45,18 +45,16 @@ float noise (in vec2 _st) {
 #define NUM_OCTAVES 8
 
 float fbm ( in vec2 _st) {
-    float v = 0.0;
+    float v = 0.;
     float a = 0.5;
-    vec2 shift = vec2(0.);
-    // Rotate to reduce axial bias
-   
-    for (int i = 0; i < NUM_OCTAVES; ++i) {
-    float f = float(i);
-    float ff = noise(vec2(f,f));
-    mat2 rot = mat2(cos(ff), sin(ff),
+
+    for (int i = 0; i < NUM_OCTAVES; i++) {
+        float f = float(i);
+        float ff = noise(vec2(f));
+        mat2 rot = mat2(cos(ff), sin(ff),
                     -sin(ff), cos(ff));
-        v += a * noise(_st*0.9);
-         _st = _st * rot * (cos(f) + 3.) + shift;
+        v += a * noise(_st * 0.9);
+        _st = _st * rot * (cos(f) + 3.);
         a *= 0.5;
     }
     return v;
@@ -65,12 +63,12 @@ float fbm ( in vec2 _st) {
 
 
 float rfbm(vec2 p) {
-    const int iters = 1;
-    vec2 f = p + fbm(p);
+    const int iters = 2;
+    vec2 f = p;
     for (int i = 0; i < iters; i++) {
-        f = vec2(fbm(f + fbm(f)));
+        f += p + fbm(f);
     }
-    return f.x;
+    return fbm(f);
 }
 
 vec2 swirl(vec2 _st) {
