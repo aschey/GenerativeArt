@@ -119,7 +119,7 @@ void main() {
     // Redshift colors inside the swirl
     color += vec3(n*3., -n, -n*3.) * (1. - smoothstep(0., 1., dist));
     // Amplify warped pattern
-	color *= (0.3*f*f*f + 1.2*f*f + 0.6*f);
+    color *= (0.3*f*f*f + 1.2*f*f + 0.6*f);
     
     gl_FragColor = vec4(color,1.);
 }
