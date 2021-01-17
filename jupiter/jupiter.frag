@@ -12,19 +12,17 @@ uniform float u_time;
 #define random_seed 7.2
 
 float random (in vec2 _st) {
-    return fract(sin(dot(_st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
+    return fract(sin(dot(_st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
-mat2 rotate2d(float _angle){
+mat2 rotate2d(float _angle) {
     return mat2(cos(_angle), sin(_angle),
                 -sin(_angle), cos(_angle));
 }
 
 // Based on Morgan McGuire @morgan3d
 // https://www.shadertoy.com/view/4dS3Wd
-float noise (in vec2 _st) {
+float noise (vec2 _st) {
     vec2 i = floor(_st);
     vec2 f = fract(_st);
 
@@ -44,7 +42,7 @@ float noise (in vec2 _st) {
 }
 
 // fractional brownian motion
-float fbm ( in vec2 _st) {
+float fbm (vec2 _st) {
     float v = 0.;
     float a = 0.5;
     const int NUM_OCTAVES = 8;
@@ -75,10 +73,10 @@ vec2 swirl(vec2 _st) {
     float effectRadius = .3;
     float effectAngle = 2.5 * PI;
     
+    // adding noise(_st * some_large-ish_number) here is what overloads the swirl effect
+    // and creates smaller swirls elsewhere in the image
     float angle = atan(_st.y * (1. + yMod), _st.x) 
         + (effectAngle * smoothstep(0., effectRadius, len) 
-            // adding noise(_st * some large-ish number) here is what overloads the swirl effect
-            // and creates smaller swirls elsewhere in the image
            + noise(_st * cos(random_seed) * 11.)); 
         
     return vec2(len * cos(angle), len * sin(angle));
