@@ -1,3 +1,5 @@
+// Heavily borrowed from the last example in this article https://thebookofshaders.com/13/
+
 #ifdef GL_ES
 precision mediump float;
 #endif
@@ -16,8 +18,8 @@ float random (in vec2 _st) {
 }
 
 mat2 rotate2d(float _angle){
-    return mat2(cos(_angle),-sin(_angle),
-                sin(_angle),cos(_angle));
+    return mat2(cos(_angle), sin(_angle),
+                -sin(_angle), cos(_angle));
 }
 
 // Based on Morgan McGuire @morgan3d
@@ -32,6 +34,7 @@ float noise (in vec2 _st) {
     float c = random(i + vec2(0.0, 1.0));
     float d = random(i + vec2(1.0, 1.0));
 
+    // Use quintic interpolation curve instead of cubic for more detail
     //vec2 u = f * f * (3.0 - 2.0 * f);
     vec2 u = f * f * f * (f * (f * 6. - 15.) + 10.);
 
@@ -40,29 +43,23 @@ float noise (in vec2 _st) {
             (d - b) * u.x * u.y ;
 }
 
-
-
-#define NUM_OCTAVES 8
-
+// fractional brownian motion
 float fbm ( in vec2 _st) {
     float v = 0.;
     float a = 0.5;
-
+    const int NUM_OCTAVES = 8;
     for (int i = 0; i < NUM_OCTAVES; i++) {
         float f = float(i);
-        float ff = noise(vec2(f));
-        mat2 rot = mat2(cos(ff), sin(ff),
-                    -sin(ff), cos(ff));
+        float noiseF = noise(vec2(f));
         v += a * noise(_st * 0.9);
-        _st = _st * rot * (cos(f) + 3.);
+        _st = _st * rotate2d(noiseF) * (cos(f) + 3.);
         a *= 0.5;
     }
     return v;
 }
 
-
-
-float rfbm(vec2 p) {
+// Domain warping based on technique here https://www.iquilezles.org/www/articles/warp/warp.htm
+float warp(vec2 p) {
     const int iters = 2;
     vec2 f = p;
     for (int i = 0; i < iters; i++) {
@@ -72,50 +69,56 @@ float rfbm(vec2 p) {
 }
 
 vec2 swirl(vec2 _st) {
-    float len = length(vec2(_st.x, _st.y * 0.85));
+    // Modify y component so it isn't a perfect circle
+    float yMod = 0.15;
+    float len = length(vec2(_st.x, _st.y * (1. - yMod)));
     float effectRadius = .3;
     float effectAngle = 2.5 * PI;
-    float angle = atan(_st.y * 1.15, _st.x) 
+    
+    float angle = atan(_st.y * (1. + yMod), _st.x) 
         + (effectAngle * smoothstep(0., effectRadius, len) 
+            // adding noise(_st * some large-ish number) here is what overloads the swirl effect
+            // and creates smaller swirls elsewhere in the image
            + noise(_st * cos(random_seed) * 11.)); 
         
     return vec2(len * cos(angle), len * sin(angle));
 }
 
+vec3 normalizeRgb(float r, float g, float b) {
+    return vec3(r, g, b) / vec3(256.);
+}
 
 void main() {
     vec2 st = gl_FragCoord.xy/u_resolution.xy;
+
+    // reshape into a square
     float x_mult = u_resolution.x/u_resolution.y;
     st.x *= x_mult;
-   
+    
+    // change center coordinate to create swirl effect at on offset
     st.x = 0.64 * x_mult - st.x;
     st.y = 0.6 - st.y;
     st = swirl(st);
-    st = rotate2d(PI*1.) * st;
+
+    st *= rotate2d(PI);
     st *= 3.;
-    float rad2 = length(st);
-    
-    vec3 color = vec3(0.0);
 
     vec2 q = vec2(fbm(st));
-   
-    vec2 p = st + q;
-    float f = rfbm(p);
-    
-    color = (mix(vec3(237./256.,51./256.,31./256.),
-                vec3(173./256.,62./256.,31./256.),
-                clamp(length(q),0.0,1.0)));
+    float f = warp(st + q);
 
-    color = (mix(color,
-                vec3(209./256.,83./256.,4./256.),
-                clamp(length(q),0.0,1.0)));
-
-    color = (mix(color,
-                vec3(219./256.,191./256.,180./256.),
-                clamp(length(q),0.0,1.0)));
+    // Blend colors
+    float qDist = clamp(length(q),0.0,1.0);
+    vec3 color = mix(normalizeRgb(237., 51.,31.),
+                    normalizeRgb(173.,62.,31.), qDist);
+    color = mix(color, normalizeRgb(209.,83.,4.), qDist);
+    color = mix(color, normalizeRgb(219.,191.,180.), qDist);
     
-    float n = abs(noise(swirl(st)));
-    color += vec3(n*3., -n, -n*3.) * (1.-smoothstep(0., 1., rad2));
+    float n = noise(swirl(st));
+    float dist = length(st);
+
+    // Redshift colors inside the swirl
+    color += vec3(n*3., -n, -n*3.) * (1. - smoothstep(0., 1., dist));
+    // Amplify warped pattern
 	color *= (0.3*f*f*f + 1.2*f*f + 0.6*f);
     
     gl_FragColor = vec4(color,1.);
