@@ -76,10 +76,9 @@ vec2 swirl(vec2 _st) {
     // adding noise(_st * some_large-ish_number) here is what overloads the swirl effect
     // and creates smaller swirls elsewhere in the image
     float angle = atan(_st.y * (1. + yMod), _st.x) 
-        + (effectAngle * smoothstep(0., effectRadius, len) 
-           + noise(_st * cos(random_seed) * 11.)); 
+        + (effectAngle * smoothstep(0., effectRadius, len) + noise(_st * cos(random_seed) * 11.)); 
         
-    return vec2(len * cos(angle), len * sin(angle));
+    return vec2(cos(angle), sin(angle)) * len;
 }
 
 vec3 normalizeRgb(float r, float g, float b) {
