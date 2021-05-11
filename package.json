@@ -3,7 +3,7 @@
     "@types/node": "^13.1.8",
     "comlink": "^4.2.0",
     "glslCanvas": "^0.1.7",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "lodash.product": "^18.9.19"
   }
 }
