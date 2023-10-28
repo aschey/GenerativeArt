@@ -115,12 +115,13 @@ void main() {
     float rotPct = 0.7;
     mat2 rot = mat2(cos(rotPct), sin(rotPct),
                     -sin(rotPct), cos(rotPct));
-    st = st * rot + 0.3;
+    st = st * rot + 0.7;
+    st.x += 10.;
 
-    vec3 color = layer(st * 3., 1., vec3(0.,0.,0.), vec3(.9,.9,.9));
-    color = layer((1.-st)*3., 0.6, color,normalizeRgb(219.,56.,15.));
-    color = layer((st*3.03), 0.4, color,normalizeRgb(232.,105.,23.));
-    color = layer((st*3.05), 0.25, color,normalizeRgb(23.,232.,225.));
+    vec3 color = layer(st * 3., 1., vec3(0.05,0.05,0.05), vec3(0.9,0.9,0.9));
+    color = layer((1.-st)*3., 0.25, color,normalizeRgb(209.,57.,15.));
+    color = layer(st*3.01+snoise(st)*0.03, 0.3, color,normalizeRgb(232.,105.,23.));
+    color = layer(st*3.02, 0.25, color,normalizeRgb(23.,232.,225.));
 
     gl_FragColor = vec4(color,1.0);
 }
