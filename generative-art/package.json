@@ -1,0 +1,36 @@
+{
+  "name": "generative-art",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@pixi/react": "7.1.1",
+    "@react-three/fiber": "^8.15.8",
+    "@types/node": "20.8.9",
+    "@types/react": "18.2.33",
+    "@types/react-dom": "18.2.14",
+    "@types/three": "^0.158.0",
+    "comlink": "^4.4.1",
+    "eslint": "8.52.0",
+    "eslint-config-next": "14.0.0",
+    "leva": "^0.9.35",
+    "lodash": "^4.17.21",
+    "lodash.product": "^18.10.0",
+    "next": "14.0.0",
+    "pixi.js": "^7.3.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "three": "^0.158.0",
+    "typescript": "5.2.2"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.200",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0"
+  }
+}

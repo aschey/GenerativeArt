@@ -1,10 +1,11 @@
-/// <reference path="node_modules/@types/p5/global.d.ts" />
+import _ from "lodash";
+import { limitedGaussian } from "./util";
 
-const colorArrayToRgbString = (arr) =>
+export const colorArrayToRgbString = <T>(arr: T[]) =>
   `rgb${arr.length < 4 ? "" : "a"}(${arr.join()})`;
 
 // https://awik.io/determine-color-bright-dark-using-javascript/
-function lightOrDark(color) {
+export const lightOrDark = (color: any) => {
   // Variables for red, green, blue values
   var r, g, b, hsp;
 
@@ -36,10 +37,15 @@ function lightOrDark(color) {
   } else {
     return "dark";
   }
-}
+};
 
 // https://github.com/PimpTrizkit/PJs/wiki/12.-Shade,-Blend-and-Convert-a-Web-Color-(pSBC.js)
-function pSBC(p, c0, c1, l) {
+const pSBC = (
+  p: number,
+  c0: string | number,
+  c1?: string | number,
+  l?: boolean
+) => {
   let r,
     g,
     b,
@@ -49,7 +55,7 @@ function pSBC(p, c0, c1, l) {
     h,
     i = parseInt,
     m = Math.round,
-    a = typeof c1 == "string";
+    a: any = typeof c1 == "string";
   if (
     typeof p != "number" ||
     p < -1 ||
@@ -59,47 +65,46 @@ function pSBC(p, c0, c1, l) {
     (c1 && !a)
   )
     return null;
-  if (!this.pSBCr)
-    this.pSBCr = (d) => {
-      let n = d.length,
-        x = {};
-      if (n > 9) {
-        ([r, g, b, a] = d = d.split(",")), (n = d.length);
-        if (n < 3 || n > 4) return null;
-        (x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4))),
-          (x.g = i(g)),
-          (x.b = i(b)),
-          (x.a = a ? parseFloat(a) : -1);
-      } else {
-        if (n == 8 || n == 6 || n < 4) return null;
-        if (n < 6)
-          d =
-            "#" +
-            d[1] +
-            d[1] +
-            d[2] +
-            d[2] +
-            d[3] +
-            d[3] +
-            (n > 4 ? d[4] + d[4] : "");
-        d = i(d.slice(1), 16);
-        if (n == 9 || n == 5)
-          (x.r = (d >> 24) & 255),
-            (x.g = (d >> 16) & 255),
-            (x.b = (d >> 8) & 255),
-            (x.a = m((d & 255) / 0.255) / 1000);
-        else
-          (x.r = d >> 16), (x.g = (d >> 8) & 255), (x.b = d & 255), (x.a = -1);
-      }
-      return x;
-    };
+
+  const pSBCr = (d: any) => {
+    let n = d.length,
+      x = { r: 0, g: 0, b: 0, a: 0 };
+    if (n > 9) {
+      ([r, g, b, a] = d = d.split(",")), (n = d.length);
+      if (n < 3 || n > 4) return null;
+      (x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4))),
+        (x.g = i(g)),
+        (x.b = i(b)),
+        (x.a = a ? parseFloat(a) : -1);
+    } else {
+      if (n == 8 || n == 6 || n < 4) return null;
+      if (n < 6)
+        d =
+          "#" +
+          d[1] +
+          d[1] +
+          d[2] +
+          d[2] +
+          d[3] +
+          d[3] +
+          (n > 4 ? d[4] + d[4] : "");
+      d = i(d.slice(1), 16);
+      if (n == 9 || n == 5)
+        (x.r = (d >> 24) & 255),
+          (x.g = (d >> 16) & 255),
+          (x.b = (d >> 8) & 255),
+          (x.a = m((d & 255) / 0.255) / 1000);
+      else (x.r = d >> 16), (x.g = (d >> 8) & 255), (x.b = d & 255), (x.a = -1);
+    }
+    return x;
+  };
   (h = c0.length > 9),
-    (h = a ? (c1.length > 9 ? true : c1 == "c" ? !h : false) : h),
-    (f = this.pSBCr(c0)),
+    (h = a ? ((c1! as any).length > 9 ? true : c1 == "c" ? !h : false) : h),
+    (f = pSBCr(c0)),
     (P = p < 0),
     (t =
       c1 && c1 != "c"
-        ? this.pSBCr(c1)
+        ? pSBCr(c1)
         : P
         ? { r: 0, g: 0, b: 0, a: -1 }
         : { r: 255, g: 255, b: 255, a: -1 }),
@@ -137,16 +142,22 @@ function pSBC(p, c0, c1, l) {
         .toString(16)
         .slice(1, f ? undefined : -2)
     );
-}
+};
 
-const lighten = (color, percent) => pSBC(percent, color);
+export const lighten = (color: string | number, percent: number) =>
+  pSBC(percent, color, undefined, undefined);
 
-const darken = (color, percent) => pSBC(-1 * percent, color);
+export const darken = (color: string | number, percent: number) =>
+  pSBC(-1 * percent, color, undefined, undefined);
 
-const colorGradient = (startColor, endColor, percent, linearBlending = false) =>
-  pSBC(percent, startColor, endColor, linearBlending);
+export const colorGradient = (
+  startColor: string | number,
+  endColor: string | number,
+  percent: number,
+  linearBlending = false
+) => pSBC(percent, startColor, endColor, linearBlending);
 
-const getColorInt = (hexColorString, pos) => {
+export const getColorInt = (hexColorString: string, pos?: number) => {
   const offset = hexColorString.indexOf("#") === 0 ? 1 : 0;
   if (pos === undefined) {
     return parseInt(
@@ -157,13 +168,18 @@ const getColorInt = (hexColorString, pos) => {
   return parseInt(hexColorString.substr(pos * 2 + offset, 2), 16);
 };
 
-function hexStringToInts(hexColorString) {
+export const hexStringToInts = (hexColorString: string) => {
   // Remove leading #
   let valsOnly = hexColorString.slice(1, hexColorString.length);
   return _.range(3).map((i) => getColorInt(valsOnly, i));
-}
+};
 
-function colorGradientGaussian(startColor, endColor, mean, stdDev) {
+export const colorGradientGaussian = (
+  startColor: string | number,
+  endColor: string | number,
+  mean: number,
+  stdDev: number
+) => {
   let percent = limitedGaussian(mean, stdDev, 0, 1);
   return colorGradient(startColor, endColor, percent);
-}
+};
