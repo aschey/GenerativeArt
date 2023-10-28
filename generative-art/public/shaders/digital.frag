@@ -1,13 +1,10 @@
-// Author: @patriciogv - 2015
-// Tittle: Turbulence
-
-#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
 #endif
 
-uniform vec2 u_resolution;
-uniform vec2 u_mouse;
-uniform float u_time;
+uniform vec2 iResolution;
 
 // Some useful functions
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -89,46 +86,41 @@ float random (in vec2 st) {
         43758.5453123);
 }
 
-float noise (in vec2 st) {
-    vec2 i = floor(st);
-    vec2 f = fract(st);
-
-    // Four corners in 2D of a tile
-    float a = random(i);
-    float b = random(i + vec2(1.0, 0.0));
-    float c = random(i + vec2(0.0, 1.0));
-    float d = random(i + vec2(1.0, 1.0));
-
-    vec2 u = f * f * (3.0 - 2.0 * f);
-
-    return mix(a, b, u.x) +
-            (c - a)* u.y * (1.0 - u.x) +
-            (d - b) * u.x * u.y;
-}
-
-
 #define OCTAVES 6
-float turbulence (in vec2 st) {
-    // Initial values
-    float value = 0.0;
-    float amplitude = .5;
-    float frequency = 1.;
-    //
-    // Loop of octaves
+float fbm (in vec2 st) {
+    float value = 0.;
+    float amplitude = .25;
+    
     for (int i = 0; i < OCTAVES; i++) {
-        value += amplitude * (snoise(st));
+        value += amplitude * snoise(st);
         st *= 2.;
-        amplitude *= .9;
+        amplitude *= 0.9;
     }
     return value;
 }
 
-void main() {
-    vec2 st = gl_FragCoord.xy/u_resolution.xy*2.;
-    st.x *= u_resolution.x/u_resolution.y;
-    vec3 color = vec3(0.0);
+vec3 normalizeRgb(float r, float g, float b) {
+    return vec3(r, g, b) / vec3(256.);
+}
 
-    color += turbulence(st*3.0);
+vec3 layer(in vec2 st, in float mult, in vec3 startColor, in vec3 endColor) {
+    float t = fbm(st);
+    vec3 color = mix(startColor, endColor, clamp(t, -0.05, 1.25) * mult);
+    return color;
+}
+
+void main() {
+    vec2 st = gl_FragCoord.xy/iResolution.xy*2.;
+    st.x *= iResolution.x/iResolution.y;
+    float rotPct = 0.7;
+    mat2 rot = mat2(cos(rotPct), sin(rotPct),
+                    -sin(rotPct), cos(rotPct));
+    st = st * rot + 0.3;
+
+    vec3 color = layer(st * 3., 1., vec3(0.,0.,0.), vec3(.9,.9,.9));
+    color = layer((1.-st)*3., 0.6, color,normalizeRgb(219.,56.,15.));
+    color = layer((st*3.03), 0.4, color,normalizeRgb(232.,105.,23.));
+    color = layer((st*3.05), 0.25, color,normalizeRgb(23.,232.,225.));
 
     gl_FragColor = vec4(color,1.0);
 }

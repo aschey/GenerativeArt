@@ -249,14 +249,14 @@ export const range2d = (
   );
 
 export const cRange2d = (
-  start1: number,
-  end1: number,
-  step1: number,
-  start2: number,
-  end2: number,
-  step2: number
+  startY: number,
+  endY: number,
+  stepY: number,
+  startX: number,
+  endX: number,
+  stepX: number
 ): Coord[] =>
-  range2d(start1, end1, step1, start2, end2, step2, "y", "x") as any;
+  range2d(startY, endY, stepY, startX, endX, stepX, "y", "x") as any;
 
 export const worker = <I, O>(
   seq: number[],
