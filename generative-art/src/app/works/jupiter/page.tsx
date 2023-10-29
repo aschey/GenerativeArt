@@ -8,9 +8,7 @@ import { useControls, button, folder } from "leva";
 
 const Mesh = () => {
   const shaderRef = useRef<THREE.ShaderMaterial>(null);
-  const [jupiterShader, setJupiterShader] = useState<string | undefined>(
-    undefined
-  );
+  const [fragShader, setFragShader] = useState<string | undefined>(undefined);
   const [vertexShader, setVertexShader] = useState<string | undefined>(
     undefined
   );
@@ -32,9 +30,11 @@ const Mesh = () => {
   });
 
   useEffect(() => {
-    fetch("/shaders/jupiter.frag")
-      .then((r) => r.text())
-      .then(setJupiterShader);
+    Promise.all([fetch("/shaders/util.frag"), fetch("/shaders/jupiter.frag")])
+      .then(([a, b]) => Promise.all([a.text(), b.text()]))
+      .then(([util, frag]) =>
+        setFragShader(frag.replace("#pragma util;", util))
+      );
     fetch("/shaders/jupiter.vert")
       .then((r) => r.text())
       .then(setVertexShader);
@@ -50,11 +50,11 @@ const Mesh = () => {
   return (
     <mesh>
       <boxGeometry args={[100, 100]} />
-      {jupiterShader && (
+      {fragShader && (
         <shaderMaterial
           ref={shaderRef}
           attach="material"
-          fragmentShader={jupiterShader}
+          fragmentShader={fragShader}
           vertexShader={vertexShader}
           uniforms={{
             iResolution: {

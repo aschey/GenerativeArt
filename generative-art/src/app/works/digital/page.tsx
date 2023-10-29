@@ -27,9 +27,11 @@ const Mesh = () => {
   });
 
   useEffect(() => {
-    fetch("/shaders/digital.frag")
-      .then((r) => r.text())
-      .then(setFragShader);
+    Promise.all([fetch("/shaders/util.frag"), fetch("/shaders/digital.frag")])
+      .then(([a, b]) => Promise.all([a.text(), b.text()]))
+      .then(([util, frag]) =>
+        setFragShader(frag.replace("#pragma util;", util))
+      );
   }, []);
 
   useFrame((state) => {

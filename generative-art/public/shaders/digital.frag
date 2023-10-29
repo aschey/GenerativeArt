@@ -6,85 +6,7 @@ precision mediump float;
 
 uniform vec2 iResolution;
 
-// Some useful functions
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
-
-//
-// Description : GLSL 2D simplex noise function
-//      Author : Ian McEwan, Ashima Arts
-//  Maintainer : ijm
-//     Lastmod : 20110822 (ijm)
-//     License :
-//  Copyright (C) 2011 Ashima Arts. All rights reserved.
-//  Distributed under the MIT License. See LICENSE file.
-//  https://github.com/ashima/webgl-noise
-//
-float snoise(vec2 v) {
-
-    // Precompute values for skewed triangular grid
-    const vec4 C = vec4(0.211324865405187,
-                        // (3.0-sqrt(3.0))/6.0
-                        0.366025403784439,
-                        // 0.5*(sqrt(3.0)-1.0)
-                        -0.577350269189626,
-                        // -1.0 + 2.0 * C.x
-                        0.024390243902439);
-                        // 1.0 / 41.0
-
-    // First corner (x0)
-    vec2 i  = floor(v + dot(v, C.yy));
-    vec2 x0 = v - i + dot(i, C.xx);
-
-    // Other two corners (x1, x2)
-    vec2 i1 = vec2(0.0);
-    i1 = (x0.x > x0.y)? vec2(1.0, 0.0):vec2(0.0, 1.0);
-    vec2 x1 = x0.xy + C.xx - i1;
-    vec2 x2 = x0.xy + C.zz;
-
-    // Do some permutations to avoid
-    // truncation effects in permutation
-    i = mod289(i);
-    vec3 p = permute(
-            permute( i.y + vec3(0.0, i1.y, 1.0))
-                + i.x + vec3(0.0, i1.x, 1.0 ));
-
-    vec3 m = max(0.5 - vec3(
-                        dot(x0,x0),
-                        dot(x2,x2),
-                        dot(x1,x1)
-                        ), 0.0);
-
-    m = m*m ;
-    m = m*m ;
-
-    // Gradients:
-    //  41 pts uniformly over a line, mapped onto a diamond
-    //  The ring size 17*17 = 289 is close to a multiple
-    //      of 41 (41*7 = 287)
-
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-
-    // Normalise gradients implicitly by scaling m
-    // Approximation of: m *= inversesqrt(a0*a0 + h*h);
-    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0+h*h);
-
-    // Compute final noise value at P
-    vec3 g = vec3(0.0);
-    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-    g.yz = a0.yz * vec2(x1.x,x2.x) + h.yz * vec2(x1.y,x2.y);
-    return 130.0 * dot(m, g);
-}
-
-float random (in vec2 st) {
-    return fract(sin(dot(st.xy,
-                         vec2(12.9898,78.233)))*
-        43758.5453123);
-}
+#pragma util;
 
 #define OCTAVES 6
 float fbm (in vec2 st) {
@@ -99,12 +21,14 @@ float fbm (in vec2 st) {
     return value;
 }
 
-vec3 normalizeRgb(float r, float g, float b) {
-    return vec3(r, g, b) / vec3(256.);
-}
-
 vec3 layer(in vec2 st, in float mult, in vec3 startColor, in vec3 endColor) {
     float t = fbm(st);
+    vec3 color = mix(startColor, endColor, clamp(t, -0.05, 1.25) * mult);
+    return color;
+}
+
+vec3 layer2(in vec2 st, in float mult, in vec3 startColor, in vec3 endColor) {
+    float t = noise(st);
     vec3 color = mix(startColor, endColor, clamp(t, -0.05, 1.25) * mult);
     return color;
 }
@@ -112,16 +36,18 @@ vec3 layer(in vec2 st, in float mult, in vec3 startColor, in vec3 endColor) {
 void main() {
     vec2 st = gl_FragCoord.xy/iResolution.xy*2.;
     st.x *= iResolution.x/iResolution.y;
-    float rotPct = 0.7;
-    mat2 rot = mat2(cos(rotPct), sin(rotPct),
-                    -sin(rotPct), cos(rotPct));
+    
+    mat2 rot = rotate2d(0.7);
     st = st * rot + 0.7;
     st.x += 10.;
 
-    vec3 color = layer(st * 3., 1., vec3(0.05,0.05,0.05), vec3(0.9,0.9,0.9));
-    color = layer((1.-st)*3., 0.25, color,normalizeRgb(209.,57.,15.));
-    color = layer(st*3.01+snoise(st)*0.03, 0.3, color,normalizeRgb(232.,105.,23.));
-    color = layer(st*3.02, 0.25, color,normalizeRgb(23.,232.,225.));
+    float n = noise(st*100.) * 0.005;
+    vec3 color = layer(st * 3. + n, 1., vec3(0.05,0.05,0.05), vec3(0.9,0.9,0.9));
+    color = (color + dither8x8(st*0.1, color)) / 2.;
+    color = layer((1. - st) * 3. + n, 0.25, color, normalizeRgb(209.,57.,15.));
+    color = layer(st * 3.01 + snoise(st) * 0.03, 0.3, color, normalizeRgb(232.,105.,23.));
+    color = layer(st * 3.02 + n, 0.25, color, normalizeRgb(23.,232.,225.));
+    color = layer((st + noise(st * 0.1) + 100.) * 0.4, 0.25, color, normalizeRgb(232.,105.,23.));
 
     gl_FragColor = vec4(color,1.0);
 }

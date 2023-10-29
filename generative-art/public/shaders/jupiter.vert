@@ -4,7 +4,6 @@ precision highp float;
 precision mediump float;
 #endif
 
-
 varying vec2 vPosition;
 
 #define PI 3.141592653589
