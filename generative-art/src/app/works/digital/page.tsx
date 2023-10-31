@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { Vector3 } from "three";
 import { useControls, button, folder } from "leva";
+import { useScreenshot } from "@/useScreenshot";
 
 const Mesh = () => {
   const shaderRef = useRef<THREE.ShaderMaterial>(null);
@@ -12,23 +13,15 @@ const Mesh = () => {
 
   const gl = useThree((state) => state.gl);
 
-  useControls({
-    screenshot: button(() => {
-      const link = document.createElement("a");
-      link.setAttribute("download", "canvas.png");
-      link.setAttribute(
-        "href",
-        gl.domElement
-          .toDataURL("image/png")
-          .replace("image/png", "image/octet-stream")
-      );
-      link.click();
-    }),
-  });
+  useScreenshot(
+    gl.domElement,
+    gl.domElement.width * 0.25,
+    gl.domElement.height * 0.25
+  );
 
   useEffect(() => {
     Promise.all([fetch("/shaders/util.frag"), fetch("/shaders/digital.frag")])
-      .then(([a, b]) => Promise.all([a.text(), b.text()]))
+      .then((shaders) => Promise.all(shaders.map((s) => s.text())))
       .then(([util, frag]) =>
         setFragShader(frag.replace("#pragma util;", util))
       );
@@ -61,6 +54,11 @@ const Mesh = () => {
 };
 
 const Digital: React.FC<{}> = () => {
+  useEffect(() => {
+    document.getElementsByTagName("canvas")[0].style.transformOrigin = "center";
+    document.getElementsByTagName("canvas")[0].style.transform =
+      "scale(0.25) translateY(-150%)";
+  }, []);
   return (
     <div
       style={{
@@ -70,9 +68,7 @@ const Digital: React.FC<{}> = () => {
         width: "100%",
       }}
     >
-      <div
-        style={{ width: "100vw", height: "100vh", transform: "rotate(0deg)" }}
-      >
+      <div style={{ width: "400vw", height: "400vh" }}>
         <Canvas frameloop="demand" gl={{ preserveDrawingBuffer: true }}>
           <Mesh />
         </Canvas>

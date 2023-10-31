@@ -63,7 +63,7 @@ void main() {
     
     // change center coordinate to create swirl effect at on offset
     st.x = 0.64 * x_mult - st.x;
-    st.y = 0.6 - st.y;
+    st.y = 0.5 - st.y;
     st = swirl(st);
 
     st *= rotate2d(PI);

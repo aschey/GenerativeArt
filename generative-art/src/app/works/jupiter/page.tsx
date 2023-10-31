@@ -4,7 +4,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { Vector3 } from "three";
-import { useControls, button, folder } from "leva";
+import { useScreenshot } from "@/useScreenshot";
 
 const Mesh = () => {
   const shaderRef = useRef<THREE.ShaderMaterial>(null);
@@ -15,29 +15,23 @@ const Mesh = () => {
 
   const gl = useThree((state) => state.gl);
 
-  useControls({
-    screenshot: button(() => {
-      const link = document.createElement("a");
-      link.setAttribute("download", "canvas.png");
-      link.setAttribute(
-        "href",
-        gl.domElement
-          .toDataURL("image/png")
-          .replace("image/png", "image/octet-stream")
-      );
-      link.click();
-    }),
-  });
+  useScreenshot(
+    gl.domElement,
+    gl.domElement.width * 0.25,
+    gl.domElement.height * 0.25
+  );
 
   useEffect(() => {
-    Promise.all([fetch("/shaders/util.frag"), fetch("/shaders/jupiter.frag")])
-      .then(([a, b]) => Promise.all([a.text(), b.text()]))
-      .then(([util, frag]) =>
-        setFragShader(frag.replace("#pragma util;", util))
-      );
-    fetch("/shaders/jupiter.vert")
-      .then((r) => r.text())
-      .then(setVertexShader);
+    Promise.all([
+      fetch("/shaders/util.frag"),
+      fetch("/shaders/jupiter.frag"),
+      fetch("/shaders/jupiter.vert"),
+    ])
+      .then((shaders) => Promise.all(shaders.map((s) => s.text())))
+      .then(([util, frag, vert]) => {
+        setFragShader(frag.replace("#pragma util;", util));
+        setVertexShader(vert);
+      });
   }, []);
 
   useFrame((state) => {
@@ -68,6 +62,11 @@ const Mesh = () => {
 };
 
 const Jupiter: React.FC<{}> = () => {
+  useEffect(() => {
+    document.getElementsByTagName("canvas")[0].style.transformOrigin = "center";
+    document.getElementsByTagName("canvas")[0].style.transform =
+      "scale(0.25) translateY(-150%)";
+  }, []);
   return (
     <div
       style={{
@@ -79,8 +78,8 @@ const Jupiter: React.FC<{}> = () => {
     >
       <div
         style={{
-          width: "calc(100vh * 0.6)",
-          height: "100vh",
+          width: "calc(400vh * 0.6)",
+          height: "400vh",
         }}
       >
         <Canvas frameloop="demand" gl={{ preserveDrawingBuffer: true }}>
