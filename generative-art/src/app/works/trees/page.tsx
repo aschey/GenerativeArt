@@ -48,7 +48,7 @@ const Trees: React.FC<{}> = () => {
   );
 };
 
-export const TreesInner: React.FC<{}> = () => {
+const TreesInner: React.FC<{}> = () => {
   const { exec, append, textureRef, graphicsRef } = useRenderer();
 
   const draw = useCallback(

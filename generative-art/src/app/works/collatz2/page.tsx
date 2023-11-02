@@ -90,7 +90,7 @@ function* genCollatz(n: number) {
 
 let scribble = new Scribble();
 
-export const Collatz2Inner: React.FC<{}> = () => {
+const Collatz2Inner: React.FC<{}> = () => {
   const { exec, append, textureRef, graphicsRef } = useRenderer();
 
   const drawShape = useCallback(
